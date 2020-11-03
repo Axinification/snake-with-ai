@@ -1,0 +1,11 @@
+{
+    "python.pythonPath": "C:\\ProgramData\\Anaconda3\\envs\\snake.py\\python.exe",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintArgs": [
+        "--extension-pkg-whitelist=pygame",
+        "--erros-only"
+    ],
+    "editor.tabSize": 4,
+
+}
