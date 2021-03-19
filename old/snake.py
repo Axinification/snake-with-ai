@@ -1,4 +1,3 @@
-import sys
 import pygame
 import math
 import random
@@ -12,7 +11,7 @@ class cube(object):
 	rows = 25
 	def __init__(self, start, direction_x=0, direction_y=0, color=(255,0,0)):
 		self.position = start
-		self.direction_x = 1
+		self.direction_x = 0
 		self.direction_y = 0
 		self.color = color
 
@@ -207,10 +206,12 @@ def main():
 	clock = pygame.time.Clock()
 
 	while flag:
-		pygame.time.delay(50)
-		clock.tick(10)
-		s.move()
-		if s.body[0].position == snack.position:
+
+	#Speed calcultaion
+		pygame.time.delay(50) #Pause for 50 miliseconds each frame
+		clock.tick(10) #Run the game at 10 fps
+		s.move() #Move the snak in the given direction
+		if s.body[0].position == snack.position: # If snake head is on the same position as snack, remove the snack, gen
 			s.addCube()
 			snack = cube(randomSnack(rows,s), color=(random.randrange(255),random.randrange(255),random.randrange(255)))
 		
