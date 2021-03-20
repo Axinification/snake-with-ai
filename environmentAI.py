@@ -5,7 +5,11 @@ import math
 from enum import Enum
 from collections import namedtuple
 import numpy as np
-from variables import SIZE, TILES, TIME_DELAY, CLOCK_TICK, START_ROW, START_COLUMN, REWARD, REWARD_MULTIPLIER
+from variables import (SIZE, TILES, TIME_DELAY, CLOCK_TICK, 
+                        START_ROW, START_COLUMN, REWARD, 
+                        REWARD_MULTIPLIER, LOOP_TIME, MINIMAL_REWARD,
+                        TIME_PENALTY)
+import matplotlib.pyplot as plt
 
 pygame.init()
 
@@ -63,9 +67,11 @@ class Game:
     
     def takeAction(self, action): # Collect input
         self.frameIteration += 1 # Update frameIteration every step
+        self.snackFrameIteration += 1 # Update sncak time counter
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                plt.savefig("test.png")
                 pygame.quit()
                 
         # Move the head
@@ -77,7 +83,7 @@ class Game:
         # Check if game over
         gameOver = False # First assume that game is not over
         # Game over on collision or when time runs out
-        if self.onCollision() or self.frameIteration > 100*len(self.snake):
+        if self.onCollision() or self.frameIteration > LOOP_TIME*len(self.snake):
             gameOver = True # If collision is detected switch gameOver to true
             reward = -REWARD # Return -REWARD if game is lost
             return reward, gameOver, self.score
@@ -86,7 +92,10 @@ class Game:
         if self.head == self.snack:
             self.score += 1 # Add point if position of head is the same 
             self._placeSnack() # Place new snack if eaten
-            self.reward = REWARD*REWARD_MULTIPLIER # Give out the reward
+            if REWARD*REWARD_MULTIPLIER-self.frameIteration*TIME_PENALTY>MINIMAL_REWARD:
+                self.reward = REWARD*REWARD_MULTIPLIER-self.snackFrameIteration*0.01 # Give out the reward // Reward lost with time
+            else:
+                self.reward = MINIMAL_REWARD
         else:
             # Pop the tail if no snack is eaten, 
             # otherwise it will stay in one place and the snake will grow constantly
@@ -164,6 +173,7 @@ class Game:
     def _placeSnack(self):
         x = random.randint(0, TILES-1)*BLOCK_SIZE # Get the new x coordinate of snack
         y = random.randint(0, TILES-1)*BLOCK_SIZE # Get the new y coordinate of snack
+        self.snackFrameIteration = 0
         self.randomColor = (random.randrange(20,255),random.randrange(20,255),random.randrange(20,255)) #Pick random color for the snack
         self.snack = Point(x, y) # Set the coordinates of the snack
         # If snack is in snake list spawn snack

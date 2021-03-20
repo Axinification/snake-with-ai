@@ -4,7 +4,7 @@ import numpy as np
 from collections import deque
 from environmentAI import Game, Direction, Point, BLOCK_SIZE
 from model import LinearQNet, QTrainer
-from plotter import plotSetup, plotUpdate
+from plotter import plot
 from variables import MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, EPSILON_DELTA, GAMMA
 
 INPUT_SIZE = 11 # Amount of inputs in state
@@ -25,8 +25,6 @@ class Agent:
 
         self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
         self.trainer = QTrainer(self.model, LEARNING_RATE, self.gamma)
-
-        plotSetup() #Plot setup
 
     def getState(self, game):
         head = game.snake[0]
@@ -166,7 +164,7 @@ def train():
             plotMeanScores.append(meanScore) # Append the mean score plot with current mean score
             #print('Scores:', plotScores, 'Mean Scores:', plotMeanScores) #Debugging
             # plot(plotScores, plotMeanScores) # Plotting of the scores
-            plotUpdate(plotScores, plotMeanScores)
+            plot(plotScores, plotMeanScores)
 
 if __name__ == '__main__':
     train()
