@@ -10,13 +10,13 @@ font = pygame.font.SysFont('arial', 25)
 Point = namedtuple('Point', 'x, y')
 
 #VARIABLES
-SIZE = 500
-ROWS = 25
-BLOCK_SIZE = SIZE/ROWS
-TIME_DELAY = 50
-CLOCK_TICK = 10
-START_ROW = 10
-START_COLUMN = 10
+SIZE = 500 #Display size in pixels
+TILES = 50 #Amount of tiles on the display
+BLOCK_SIZE = SIZE/TILES
+TIME_DELAY = 50 #Change clock delay [ms]
+CLOCK_TICK = 10 #Change amount of fps
+START_ROW = 15 #Change starting row
+START_COLUMN = 10 #Change starting column
 SNAKE_POSITION = Point(START_COLUMN*BLOCK_SIZE, START_ROW*BLOCK_SIZE)
 
 
@@ -34,11 +34,11 @@ class Direction(Enum):
 
 
 class Game:
-    def __init__(self, width=SIZE, height=SIZE, rows=ROWS):
+    def __init__(self, width=SIZE, height=SIZE, TILES=TILES):
         #Set initial values
         self.width = width
         self.height = height
-        self.rows = rows
+        self.TILES = TILES
 
         #Set initial display
         self.display = pygame.display.set_mode((width, height))
@@ -133,8 +133,8 @@ class Game:
         return False
     
     def placeSnack(self):
-        x = random.randint(0, ROWS-1)*BLOCK_SIZE
-        y = random.randint(0, ROWS-1)*BLOCK_SIZE
+        x = random.randint(0, TILES-1)*BLOCK_SIZE
+        y = random.randint(0, TILES-1)*BLOCK_SIZE
         self.randomColor = (random.randrange(20,255),random.randrange(20,255),random.randrange(20,255))
         self.snack = Point(x, y)
         if self.snack in self.snake:
@@ -144,7 +144,18 @@ class Game:
         self.display.fill(BLACK)
     
         for segment in self.snake:
-            pygame.draw.rect(self.display, SNAKE_COLOR, pygame.Rect(segment.x, segment.y, BLOCK_SIZE, BLOCK_SIZE))
+            if segment == self.snake[0]:
+                centre = BLOCK_SIZE//2
+                radius = BLOCK_SIZE//10
+                circleMiddle = (segment.x+centre-radius, segment.y+centre-radius)
+                circleMiddle2 = (segment.x+BLOCK_SIZE-radius*2, segment.y+centre-radius)
+                pygame.draw.rect(self.display, SNAKE_COLOR, pygame.Rect(segment.x, segment.y, BLOCK_SIZE, BLOCK_SIZE))
+                pygame.draw.circle(self.display, (0,0,0), circleMiddle, radius)
+                pygame.draw.circle(self.display, (0,0,0), circleMiddle2, radius)
+            else:
+                pygame.draw.rect(self.display, SNAKE_COLOR, pygame.Rect(segment.x, segment.y, BLOCK_SIZE, BLOCK_SIZE))
+        # for segment in self.snake:
+        #     pygame.draw.rect(self.display, SNAKE_COLOR, pygame.Rect(segment.x, segment.y, BLOCK_SIZE, BLOCK_SIZE))
         
         pygame.draw.rect(self.display, self.randomColor, pygame.Rect(self.snack.x, self.snack.y, BLOCK_SIZE, BLOCK_SIZE))
         
