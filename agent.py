@@ -5,7 +5,7 @@ from collections import deque
 from environmentAI import Game, Direction, Point, BLOCK_SIZE
 from model import LinearQNet, QTrainer
 from plotter import plot
-from variables import MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, EPSILON_DELTA, GAMMA, GAMMA_LOW, IS_INCREMENTING
+from variables import MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, EPSILON_DELTA, GAMMA, GAMMA_LOW, GAMMA_INCREMENT,IS_INCREMENTING
 
 #Constants
 INPUT_SIZE = 11 # Amount of inputs in state
@@ -28,7 +28,9 @@ class Agent:
         # Set gamma check
         self.isIncrementing = IS_INCREMENTING
         # Incrementing discount rate
-        self.gammaIncrementing = GAMMA_LOW
+        self.gammaLow = GAMMA_LOW
+        # Delta of gamma
+        self.gammaIncrement = GAMMA_INCREMENT
         # Learning Rate
         self.learningRate = LEARNING_RATE
         # Function to call popleft to rewrite memory
@@ -38,8 +40,8 @@ class Agent:
 
 
         self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
-        if self.isIncrementing and self.gammaIncrementing < self.gamma:
-            self.trainer = QTrainer(self.model, self.learningRate, self.gammaIncrementing)
+        if self.isIncrementing and self.gammaLow < self.gamma:
+            self.trainer = QTrainer(self.model, self.learningRate, self.gammaLow)
         else:
             self.trainer = QTrainer(self.model, self.learningRate, self.gamma)
 
@@ -166,7 +168,8 @@ def train():
             # Train replay memory and plot the results
             game.reset()
             agent.numberOfGames += 1 # Increment the number of games each game
-            agent.gammaIncrementing *= agent.numberOfGames # Gamma Incrementing
+            if agent.gammaLow < agent.gamma:
+                agent.gammaLow += agent.gammaIncrement # Gamma Incrementing
             agent.trainLongMemory()
 
             # Highscore logic -> save only better scored games
