@@ -5,7 +5,7 @@ from collections import deque
 from environmentAI import Game, Direction, Point, BLOCK_SIZE
 from model import LinearQNet, QTrainer
 from plotter import plot
-from variables import MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, EPSILON_DELTA, GAMMA
+from variables import MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, EPSILON_DELTA, GAMMA, GAMMA_LOW, IS_INCREMENTING
 
 INPUT_SIZE = 11 # Amount of inputs in state
 HIDDEN_SIZE = 256 # Amount of hidden nodes
@@ -20,11 +20,16 @@ class Agent:
         self.epsilon = 0 
         # Discount rate
         self.gamma = GAMMA
+        # Incrementing discount rate
+        self.gammaIncrementing = GAMMA_LOW
         # Function to call popleft to rewrite memory
         self.memory = deque(maxlen=MAX_MEMORY) 
 
         self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
-        self.trainer = QTrainer(self.model, LEARNING_RATE, self.gamma)
+        if IS_INCREMENTING and self.gammaIncrementing < self.gamma:
+            self.trainer = QTrainer(self.model, LEARNING_RATE, self.gammaIncrementing)
+        else:
+            self.trainer = QTrainer(self.model, LEARNING_RATE, self.gamma)
 
     def getState(self, game):
         head = game.snake[0]
@@ -149,6 +154,7 @@ def train():
             # Train replay memory and plot the results
             game.reset()
             agent.numberOfGames += 1 # Increment the number of games each game
+            agent.gammaIncrementing *= agent.numberOfGames # Gamma Incrementing
             agent.trainLongMemory()
 
             # Highscore logic -> save only better scored games
