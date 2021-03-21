@@ -34,11 +34,11 @@ class Direction(Enum):
 
 
 class Game:
-    def __init__(self, width=SIZE, height=SIZE, TILES=TILES):
+    def __init__(self, width=SIZE, height=SIZE, tiles=TILES):
         #Set initial values
         self.width = width
         self.height = height
-        self.TILES = TILES
+        self.tiles = tiles
 
         #Set initial display
         self.display = pygame.display.set_mode((width, height))
@@ -75,11 +75,11 @@ class Game:
                 pygame.quit()
                 
         # Move the head
-        self._moveSnake(action) # Update the head
-        self.snake.insert(0, self.head) # Update snake array
-        
-        reward = 0 #Initializing the reward at 0
-
+        self._moveSnake(action)
+        # Update snake array
+        self.snake.insert(0, self.head) 
+        #Initializing the reward at 0
+        reward = 0 
         # Check if game over
         gameOver = False # First assume that game is not over
         # Game over on collision or when time runs out
@@ -93,7 +93,7 @@ class Game:
             self.score += 1 # Add point if position of head is the same 
             self._placeSnack() # Place new snack if eaten
             if REWARD*REWARD_MULTIPLIER-self.frameIteration*TIME_PENALTY>MINIMAL_REWARD:
-                self.reward = REWARD*REWARD_MULTIPLIER-self.snackFrameIteration*0.01 # Give out the reward // Reward lost with time
+                self.reward = REWARD*REWARD_MULTIPLIER-self.snackFrameIteration*TIME_PENALTY # Give out the reward // Reward lost with time
             else:
                 self.reward = MINIMAL_REWARD
         else:

@@ -4,7 +4,7 @@ TILES = 25 #Amount of tiles on the display
 
 #Time controll
 TIME_DELAY = 0 #50 #Change clock delay [ms]
-CLOCK_TICK = 60 #10 #Change amount of fps
+CLOCK_TICK = 120 #10 #Change amount of fps
 
 #Starting point
 START_ROW = 15 #Change starting row
@@ -14,7 +14,7 @@ START_COLUMN = 10 #Change starting column
 MAX_MEMORY = 100000 # Maximum amount of saved runs
 BATCH_SIZE = 1000 # Maximum size of long training batch
 LEARNING_RATE = 0.005 # The rate of bias change
-EPSILON_DELTA = 100 # 0 randomness after x games
+EPSILON_DELTA = 120 # 0 randomness after x games
 
 
 IS_INCREMENTING = True # On/Off option for gamma incrementing
