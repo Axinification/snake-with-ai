@@ -206,7 +206,7 @@ def train():
 
         # Save new state
         newState = agent.getState(game)
-
+        print('Input:', newState)
         # Train the short memory
         agent.trainShortMemory(oldState, move, reward, newState, gameOver)
 
