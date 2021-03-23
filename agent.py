@@ -1,11 +1,14 @@
 import torch 
 import random
 import numpy as np
+import os
 from collections import deque
 from environmentAI import Game, Direction, Point, BLOCK_SIZE
 from model import LinearQNet, QTrainer
 from plotter import plot
-from variables import MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, EPSILON_DELTA, GAMMA, GAMMA_LOW, GAMMA_INCREMENT,IS_INCREMENTING
+from variables import (MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, 
+                        EPSILON_DELTA, GAMMA, GAMMA_LOW, GAMMA_INCREMENT,
+                        IS_INCREMENTING, CHECKPOINT_PATH, LOAD)
 
 #Constants
 INPUT_SIZE = 11 # Amount of inputs in state
@@ -27,23 +30,42 @@ class Agent:
         self.gamma = GAMMA
         # Set gamma check
         self.isIncrementing = IS_INCREMENTING
-        # Incrementing discount rate
-        self.gammaLow = GAMMA_LOW
         # Delta of gamma
         self.gammaIncrement = GAMMA_INCREMENT
+        # Current gamma
+        self.currentGamma = GAMMA_LOW
         # Learning Rate
         self.learningRate = LEARNING_RATE
         # Function to call popleft to rewrite memory
         self.memory = deque(maxlen=MAX_MEMORY) 
         # Size of batch for learning
         self.batchSize = BATCH_SIZE
-
+        #Variables for plotting
+        self.plotScores=[]
+        self.plotMeanScores=[]
+        self.totalScore = 0
 
         self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
-        if self.isIncrementing and self.gammaLow < self.gamma:
-            self.trainer = QTrainer(self.model, self.learningRate, self.gammaLow)
+        if LOAD:
+            checkpoint = torch.load(os.path.join(CHECKPOINT_PATH, 'checkpoint.pth'))
+            model = torch.load(CHECKPOINT_PATH + '/model.pth')
+            self.numberOfGames = checkpoint['numberOfGames']
+            self.learningRate = checkpoint['learningRate']
+            self.gamma = checkpoint['gamma']
+            self.plotScores = checkpoint['scores']
+            self.plotMeanScores = checkpoint['meanScores']
+            self.totalScore = checkpoint['totalScore']
+            self.model.load_state_dict(model)
+            self.model.eval()
+
+        if self.isIncrementing and self.currentGamma < self.gamma:
+            self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
         else:
             self.trainer = QTrainer(self.model, self.learningRate, self.gamma)
+
+        if LOAD:
+            checkpoint = torch.load(os.path.join(CHECKPOINT_PATH, 'checkpoint.pth'))
+            self.trainer.optimizer.load_state_dict(checkpoint['optimizer'])
 
     def getState(self, game):
         head = game.snake[0]
@@ -112,35 +134,38 @@ class Agent:
     def trainShortMemory(self, state, action, reward, nextState, gameOver):
         self.trainer.trainStep(state, action, reward, nextState, gameOver)
 
+    def useMemory(self, state, move):
+        # Convert state to tensor using torch library [5.0 , 2.7 , 0.5] -> [1,0,0] 
+        # Chooses the biggest number
+        inputState = torch.tensor(state, dtype=torch.float) 
+        # Get the prediction
+        prediction = self.model(inputState) 
+        # Convert tensor to one number // Based on index
+        predictedMove = torch.argmax(prediction).item() 
+        # Assign 1 to the move on chosen index to decide what will be the next move
+        move[predictedMove] = 1
+        return move
+
     def getAction(self, state):
         # Generating random moves -> Tradeoff exploration / exploitantion
         # Epsilon value will be lowered every game
         self.epsilon = self.epsilonChange - self.numberOfGames 
         move = [0,0,0]
-
-        # The higher the epsilon the more random moves will the snake make
-        if random.randint(0,self.epsilonChange) < self.epsilon: 
-            # If the statement is fullfiled, random move will be generated
-            moveIndex = random.randint(0,2) 
-            # Assign 1 to the move on chosen index to decide what will be the next move
-            move[moveIndex] = 1 
-        # Otherwise choose the move based on model
-        else: 
-            # Convert state to tensor using torch library [5.0 , 2.7 , 0.5] -> [1,0,0] 
-            # Chooses the biggest number
-            inputState = torch.tensor(state, dtype=torch.float) 
-            # Get the prediction
-            prediction = self.model(inputState) 
-            # Convert tensor to one number // Based on index
-            predictedMove = torch.argmax(prediction).item() 
-            # Assign 1 to the move on chosen index to decide what will be the next move
-            move[predictedMove] = 1
-        return move
+        if not LOAD:
+            # The higher the epsilon the more random moves will the snake make
+            if random.randint(0,self.epsilonChange) < self.epsilon: 
+                # If the statement is fullfiled, random move will be generated
+                moveIndex = random.randint(0,2) 
+                # Assign 1 to the move on chosen index to decide what will be the next move
+                move[moveIndex] = 1 
+            # Otherwise choose the move based on model
+            else: 
+                self.useMemory(state, move)
+            return move
+        else:
+            return self.useMemory(state, move)
 
 def train():
-    plotScores = []
-    plotMeanScores = []
-    totalScore = 0
     record = 0
     agent = Agent()
     game = Game()
@@ -168,24 +193,27 @@ def train():
             # Train replay memory and plot the results
             game.reset()
             agent.numberOfGames += 1 # Increment the number of games each game
-            if agent.gammaLow < agent.gamma:
-                agent.gammaLow += agent.gammaIncrement # Gamma Incrementing
+            if agent.currentGamma < agent.gamma:
+                agent.currentGamma += agent.gammaIncrement # Gamma Incrementing
             agent.trainLongMemory()
 
             # Highscore logic -> save only better scored games
             if score > record:
                 record = score # Set record to score
-                agent.model.save() # Save the model
+                
+            #Saving
+            agent.model.saveModel(CHECKPOINT_PATH) # Save the model
+            agent.trainer.saveParameters( agent.plotScores, agent.plotMeanScores, agent.totalScore, agent.numberOfGames, CHECKPOINT_PATH) # Save parameters    
             
             print('Game:', agent.numberOfGames, 'Score:', score, 'Record:', record)
             
-            plotScores.append(score) # Append the plot scores list with score
-            totalScore += score # Add current score to score total
-            meanScore = totalScore / agent.numberOfGames # Calculate mean score using total
-            plotMeanScores.append(meanScore) # Append the mean score plot with current mean score
-            #print('Scores:', plotScores, 'Mean Scores:', plotMeanScores) #Debugging
+            agent.plotScores.append(score) # Append the plot scores list with score
+            agent.totalScore += score # Add current score to score total
+            meanScore = agent.totalScore / agent.numberOfGames # Calculate mean score using total
+            agent.plotMeanScores.append(meanScore) # Append the mean score plot with current mean score
+            # print('Scores:', plotScores, 'Mean Scores:', plotMeanScores) #Debugging
             # plot(plotScores, plotMeanScores) # Plotting of the scores
-            plot(plotScores, plotMeanScores)
+            plot(agent.plotScores, agent.plotMeanScores)
 
 if __name__ == '__main__':
     train()

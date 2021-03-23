@@ -1,7 +1,6 @@
 from numpy.core.numeric import array_equal
 import pygame
 import random
-import math
 from enum import Enum
 from collections import namedtuple
 import numpy as np
@@ -183,20 +182,22 @@ class Game:
     # Giving reward for th right direction
     def _directionReward(self):
         reward = 0
+
+        #Rewards for movement
         if self.direction is Direction.RIGHT and self.head.x <= self.snack.x and self.head.y == self.snack.y:
-            reward = 1
+            reward = 0.6
         elif self.direction is Direction.RIGHT and self.head.x <= self.snack.x:
             reward = 0.5
         if self.direction is Direction.LEFT and self.head.x >= self.snack.x and self.head.y == self.snack.y:
-            reward = 1
+            reward = 0.6
         elif self.direction is Direction.LEFT and self.head.x >= self.snack.x:
             reward = 0.5
         if self.direction is Direction.DOWN and self.head.y <= self.snack.y and self.head.x == self.snack.x:
-            reward = 1
+            reward = 0.6
         elif self.direction is Direction.DOWN and self.head.y <= self.snack.y:
             reward = 0.5
         if self.direction is Direction.UP and self.head.y >= self.snack.y and self.head.x == self.snack.x:
-            reward = 1
+            reward = 0.6
         elif self.direction is Direction.UP and self.head.y >= self.snack.y:
             reward = 0.5
         self.reward = reward
