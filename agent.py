@@ -11,7 +11,7 @@ from variables import (MAX_MEMORY, BATCH_SIZE, LEARNING_RATE,
                         IS_INCREMENTING, CHECKPOINT_PATH, LOAD)
 
 #Constants
-INPUT_SIZE = 11 # Amount of inputs in state
+INPUT_SIZE = 15 # Amount of inputs in state
 HIDDEN_SIZE = 256 # Amount of hidden nodes // can be changed
 OUTPUT_SIZE = 3 # Amount of actions that AI can take
 
@@ -70,9 +70,13 @@ class Agent:
         # incrementing "x" to the RIGHT 
         # and "y" in the DOWN direction
         pointLeft = Point(head.x - self.blockSize, head.y)
-        pointRight = Point(head.x + self.blockSize, head.y)
+        pointLeftUp = Point(head.x - self.blockSize, head.y - self.blockSize)
         pointUp = Point(head.x, head.y - self.blockSize)
+        pointRightUp = Point(head.x + self.blockSize, head.y - self.blockSize)
+        pointRight = Point(head.x + self.blockSize, head.y)
+        pointRightDown = Point(head.x + self.blockSize, head.y + self.blockSize)
         pointDown = Point(head.x, head.y + self.blockSize)
+        pointLeftDown = Point(head.x - self.blockSize, head.y + self.blockSize)
         # Check in which direction snake is going
         directionLeft = game.direction == Direction.LEFT
         directionRight = game.direction == Direction.RIGHT
@@ -97,6 +101,30 @@ class Agent:
             (directionRight and game.onCollision(pointUp)) or
             (directionUp and game.onCollision(pointLeft)) or
             (directionDown and game.onCollision(pointRight)),
+
+            #Danger to the left forward
+            (directionLeft and game.onCollision(pointLeftDown)) or
+            (directionRight and game.onCollision(pointRightUp)) or
+            (directionUp and game.onCollision(pointLeftUp)) or
+            (directionDown and game.onCollision(pointRightDown)),
+
+            #Danger to the right forward
+            (directionLeft and game.onCollision(pointLeftUp)) or
+            (directionRight and game.onCollision(pointRightDown)) or
+            (directionUp and game.onCollision(pointRightUp)) or
+            (directionDown and game.onCollision(pointLeftDown)),
+
+            #Danger to the left backward
+            (directionLeft and game.onCollision(pointRightDown)) or
+            (directionRight and game.onCollision(pointLeftUp)) or
+            (directionUp and game.onCollision(pointLeftDown)) or
+            (directionDown and game.onCollision(pointRightUp)),
+
+            #Danger to the right backward
+            (directionLeft and game.onCollision(pointRightUp)) or
+            (directionRight and game.onCollision(pointLeftDown)) or
+            (directionUp and game.onCollision(pointRightDown)) or
+            (directionDown and game.onCollision(pointLeftUp)),
 
             #Move direction
             directionLeft,
