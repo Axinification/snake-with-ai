@@ -51,21 +51,17 @@ class Agent:
             model = torch.load(CHECKPOINT_PATH + '/model.pth')
             self.numberOfGames = checkpoint['numberOfGames']
             self.learningRate = checkpoint['learningRate']
-            self.gamma = checkpoint['gamma']
+            self.currentGamma = checkpoint['gamma']
             self.plotScores = checkpoint['scores']
             self.plotMeanScores = checkpoint['meanScores']
             self.totalScore = checkpoint['totalScore']
             self.model.load_state_dict(model)
             self.model.eval()
-
-        if self.isIncrementing and self.currentGamma < self.gamma:
             self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
-        else:
-            self.trainer = QTrainer(self.model, self.learningRate, self.gamma)
-
-        if LOAD:
             checkpoint = torch.load(os.path.join(CHECKPOINT_PATH, 'checkpoint.pth'))
             self.trainer.optimizer.load_state_dict(checkpoint['optimizer'])
+        else:
+            self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
 
     def getState(self, game):
         head = game.snake[0]
@@ -193,8 +189,14 @@ def train():
             # Train replay memory and plot the results
             game.reset()
             agent.numberOfGames += 1 # Increment the number of games each game
-            if agent.currentGamma < agent.gamma:
-                agent.currentGamma += agent.gammaIncrement # Gamma Incrementing
+            if agent.isIncrementing and agent.currentGamma < agent.gamma:
+                if agent.numberOfGames > agent.epsilon:
+                    agent.currentGamma += agent.gammaIncrement # Gamma Incrementing
+                agent.currentGamma = round(agent.currentGamma, 3)
+                agent.trainer = QTrainer(agent.model, agent.learningRate, agent.currentGamma)
+            else:
+                agent.currentGamma = agent.gamma
+                agent.trainer = QTrainer(agent.model, agent.learningRate, agent.gamma)
             agent.trainLongMemory()
 
             # Highscore logic -> save only better scored games
@@ -205,7 +207,7 @@ def train():
             agent.model.saveModel(CHECKPOINT_PATH) # Save the model
             agent.trainer.saveParameters( agent.plotScores, agent.plotMeanScores, agent.totalScore, agent.numberOfGames, CHECKPOINT_PATH) # Save parameters    
             
-            print('Game:', agent.numberOfGames, 'Score:', score, 'Record:', record)
+            print('Game:', agent.numberOfGames, 'Score:', score, 'Record:', record, 'Gamma:', agent.currentGamma)
             
             agent.plotScores.append(score) # Append the plot scores list with score
             agent.totalScore += score # Add current score to score total
