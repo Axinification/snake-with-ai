@@ -18,12 +18,13 @@ class LinearQNet(nn.Module):
         return input
     
     # Saving the model
-    def save(self, fileName='model.pth'):
-        modelFolderPath = './model' # Model will be saved in the 'model' folder
+    def saveModel(self, folder, fileName='model.pth'):
+        modelFolderPath = folder # Model will be saved in the 'model' folder
         if not os.path.exists(modelFolderPath):
             os.makedirs(modelFolderPath) # Creating the folder
         fileName = os.path.join(modelFolderPath, fileName) # Setting filepath for the model
         torch.save(self.state_dict(), fileName) # Saving the model
+
 
 class QTrainer:
     def __init__(self, model, learningRate, gamma):
@@ -32,6 +33,31 @@ class QTrainer:
         self.gamma = gamma # Defining discount rate
         self.optimizer = optim.Adam(model.parameters(), self.learningRate) # Optimization using pyTorch
         self.criterion = nn.MSELoss() # Loss function
+
+    def saveParameters(self, scores, meanScores, totalScore, numberOfGames, folder, fileName='checkpoint.pth'):
+        parametersFolderPath = folder
+        if not os.path.exists(parametersFolderPath):
+            os.makedirs(parametersFolderPath) # Creating the folder
+        fileName = os.path.join(parametersFolderPath, fileName) # Setting filepath for the model
+        
+        checkpoint = {
+            'scores': scores,
+            'meanScores': meanScores,
+            'totalScore': totalScore,
+            'numberOfGames': numberOfGames,
+            'learningRate': self.learningRate,
+            'gamma': self.gamma,
+            'optimizer': self.optimizer.state_dict()
+        }
+        torch.save(checkpoint, fileName)
+
+    # def loadParameters(self, model, learningRate, gamma, optimizer):
+    #     self.model = LinearQNet(11, 256, 3)
+    #     self.learningRate = learningRate
+    #     self.gamma = gamma
+    #     self.optimizer = optimizer
+    #     self.model.load_state_dict(model)
+    #     self.model.eval()
 
     def trainStep(self, state, action, reward, nextState, gameOver):
         # Convert to tensors

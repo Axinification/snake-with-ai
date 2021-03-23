@@ -15,12 +15,12 @@ START_COLUMN = 10 #Change starting column
 MAX_MEMORY = 100000 # Maximum amount of saved runs
 BATCH_SIZE = 1000 # Maximum size of long training batch
 LEARNING_RATE = 0.001 # The rate of bias change
-EPSILON_DELTA = 120 # 0 randomness after x games
+EPSILON_DELTA = 80 # 0 randomness after x games
 
 
 IS_INCREMENTING = True # On/Off option for gamma incrementing
 GAMMA = 0.9 # Has to be less than 1. Lower discount rate strives for quick rewards and higher for the long term ones
-GAMMA_LOW = 0.01 # Used for incrementing gamma over time // Set IS_INCREMENTING to True for it to work
+GAMMA_LOW = 0.1 # Used for incrementing gamma over time // Set IS_INCREMENTING to True for it to work
 GAMMA_INCREMENT = 0.01 # 
 #Reward system
 REWARD = 10 # Both positive and negative // also minimal reward on time penalty
@@ -28,3 +28,6 @@ REWARD_MULTIPLIER = 3 # Multiplies positive reward
 TIME_PENALTY = 0.01 # This times frames after collecting apple or start will be substracted from apple reward
 
 LOOP_TIME = 100 # Per snake segment
+
+CHECKPOINT_PATH = "./checkpoint"
+LOAD = True
