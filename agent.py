@@ -190,7 +190,7 @@ def train():
             game.reset()
             agent.numberOfGames += 1 # Increment the number of games each game
             if agent.isIncrementing and agent.currentGamma < agent.gamma:
-                if agent.numberOfGames > agent.epsilon:
+                if agent.numberOfGames > agent.epsilonChange:
                     agent.currentGamma += agent.gammaIncrement # Gamma Incrementing
                 agent.currentGamma = round(agent.currentGamma, 3)
                 agent.trainer = QTrainer(agent.model, agent.learningRate, agent.currentGamma)
