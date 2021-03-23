@@ -7,8 +7,7 @@ from collections import namedtuple
 import numpy as np
 from variables import (SIZE, TILES, TIME_DELAY, CLOCK_TICK, 
                         START_ROW, START_COLUMN, REWARD, 
-                        REWARD_MULTIPLIER, LOOP_TIME, MINIMAL_REWARD,
-                        TIME_PENALTY)
+                        REWARD_MULTIPLIER, LOOP_TIME, TIME_PENALTY, EASY_MODE)
 import matplotlib.pyplot as plt
 
 pygame.init()
@@ -34,11 +33,11 @@ class Direction(Enum):
 
 
 class Game:
-    def __init__(self, width=SIZE, height=SIZE, TILES=TILES):
+    def __init__(self, width=SIZE, height=SIZE, tiles=TILES):
         #Set initial values
         self.width = width
         self.height = height
-        self.TILES = TILES
+        self.tiles = tiles
 
         #Set initial display
         self.display = pygame.display.set_mode((width, height))
@@ -75,27 +74,29 @@ class Game:
                 pygame.quit()
                 
         # Move the head
-        self._moveSnake(action) # Update the head
-        self.snake.insert(0, self.head) # Update snake array
-        
-        reward = 0 #Initializing the reward at 0
-
+        self._moveSnake(action)
+        # Update snake array
+        self.snake.insert(0, self.head) 
+        # Check the reward for step
+        self.reward = 0
+        self._directionReward()
+        # print('Reward for step: ', reward)
         # Check if game over
         gameOver = False # First assume that game is not over
         # Game over on collision or when time runs out
         if self.onCollision() or self.frameIteration > LOOP_TIME*len(self.snake):
             gameOver = True # If collision is detected switch gameOver to true
-            reward = -REWARD # Return -REWARD if game is lost
-            return reward, gameOver, self.score
+            self.reward = -REWARD # Return -REWARD if game is lost
+            return self.reward, gameOver, self.score
             
         # Place new snack or just move
         if self.head == self.snack:
             self.score += 1 # Add point if position of head is the same 
             self._placeSnack() # Place new snack if eaten
-            if REWARD*REWARD_MULTIPLIER-self.frameIteration*TIME_PENALTY>MINIMAL_REWARD:
-                self.reward = REWARD*REWARD_MULTIPLIER-self.snackFrameIteration*0.01 # Give out the reward // Reward lost with time
+            if REWARD*REWARD_MULTIPLIER-self.frameIteration*TIME_PENALTY>REWARD:
+                self.reward = REWARD*REWARD_MULTIPLIER-self.snackFrameIteration*TIME_PENALTY # Give out the reward // Reward lost with time
             else:
-                self.reward = MINIMAL_REWARD
+                self.reward = REWARD
         else:
             # Pop the tail if no snack is eaten, 
             # otherwise it will stay in one place and the snake will grow constantly
@@ -105,8 +106,9 @@ class Game:
         self._redrawWindow()
         self.clock.tick(CLOCK_TICK)
         pygame.time.delay(TIME_DELAY)
+
         # Return game over and score
-        return reward, gameOver, self.score
+        return self.reward, gameOver, self.score
 
     # Determining the next move based on action
     def _moveSnake(self, action): 
@@ -130,7 +132,7 @@ class Game:
             newDirection = directions[nextIndex] # Turn left
         # Set the direction to newDirection
         self.direction = newDirection #Set the direction to the one choosen 
-
+        
         x = self.head.x #Get the x coordinate of head
         y = self.head.y #Get the y coordinate of head
 
@@ -148,28 +150,26 @@ class Game:
     
     #Collision detection
     def onCollision(self, head = None):
-        #WALLS VERSION
-        if head == None:
-            head = self.head
-
-        if (head.x > self.width - BLOCK_SIZE or  #If head collides with right side wall
-            head.x < 0 or #If head collides with left side wall
-            head.y > self.height - BLOCK_SIZE or  #If head collides with up side wall
-            head.y < 0): #If head collides with down side wall
-            return True
+        if EASY_MODE:
+            if self.direction is Direction.LEFT and head.x < 0: self.head = Point(SIZE, head.y)
+            elif self.direction is Direction.RIGHT and head.x > self.width - BLOCK_SIZE: head = Point(-BLOCK_SIZE, head.y)
+            elif self.direction is Direction.UP and head.y < 0: self.head = Point(head.x, SIZE)
+            elif self.direction is Direction.DOWN and head.y > self.height - BLOCK_SIZE: self.head = Point(head.x, -BLOCK_SIZE)
+        else:
+            if head == None:
+                head = self.head
+            if (head.x > self.width - BLOCK_SIZE or  #If head collides with right side wall
+                head.x < 0 or #If head collides with left side wall
+                head.y > self.height - BLOCK_SIZE or  #If head collides with up side wall
+                head.y < 0): #If head collides with down side wall
+                return True
         
-        #NO WALLS VERSION
-        # if self.direction is Direction.LEFT and head.x < 0: self.head = Point(SIZE, head.y)
-        # elif self.direction is Direction.RIGHT and head.x > self.width - BLOCK_SIZE: head = Point(-BLOCK_SIZE, head.y)
-        # elif self.direction is Direction.UP and head.y < 0: self.head = Point(head.x, SIZE)
-        # elif self.direction is Direction.DOWN and head.y > self.height - BLOCK_SIZE: self.head = Point(head.x, -BLOCK_SIZE)
-        # hits itself
-
         if head in self.snake[1:]: #If the point of head is the same as the point of snake starting from index 1 of the array
             return True
         
         return False
     
+    #Place snack
     def _placeSnack(self):
         x = random.randint(0, TILES-1)*BLOCK_SIZE # Get the new x coordinate of snack
         y = random.randint(0, TILES-1)*BLOCK_SIZE # Get the new y coordinate of snack
@@ -179,6 +179,27 @@ class Game:
         # If snack is in snake list spawn snack
         if self.snack in self.snake:
             self._placeSnack()
+
+    # Giving reward for th right direction
+    def _directionReward(self):
+        reward = 0
+        if self.direction is Direction.RIGHT and self.head.x <= self.snack.x and self.head.y == self.snack.y:
+            reward = 1
+        elif self.direction is Direction.RIGHT and self.head.x <= self.snack.x:
+            reward = 0.5
+        if self.direction is Direction.LEFT and self.head.x >= self.snack.x and self.head.y == self.snack.y:
+            reward = 1
+        elif self.direction is Direction.LEFT and self.head.x >= self.snack.x:
+            reward = 0.5
+        if self.direction is Direction.DOWN and self.head.y <= self.snack.y and self.head.x == self.snack.x:
+            reward = 1
+        elif self.direction is Direction.DOWN and self.head.y <= self.snack.y:
+            reward = 0.5
+        if self.direction is Direction.UP and self.head.y >= self.snack.y and self.head.x == self.snack.x:
+            reward = 1
+        elif self.direction is Direction.UP and self.head.y >= self.snack.y:
+            reward = 0.5
+        self.reward = reward
     
     # Update display
     def _redrawWindow(self):

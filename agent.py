@@ -5,31 +5,45 @@ from collections import deque
 from environmentAI import Game, Direction, Point, BLOCK_SIZE
 from model import LinearQNet, QTrainer
 from plotter import plot
-from variables import MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, EPSILON_DELTA, GAMMA, GAMMA_LOW, IS_INCREMENTING
+from variables import MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, EPSILON_DELTA, GAMMA, GAMMA_LOW, GAMMA_INCREMENT,IS_INCREMENTING
 
+#Constants
 INPUT_SIZE = 11 # Amount of inputs in state
-HIDDEN_SIZE = 256 # Amount of hidden nodes
+HIDDEN_SIZE = 256 # Amount of hidden nodes // can be changed
 OUTPUT_SIZE = 3 # Amount of actions that AI can take
 
 # Agent class
 class Agent: 
     def __init__(self):
+        # Size of tile
+        self.blockSize = BLOCK_SIZE
         # Counting of games
         self.numberOfGames = 0 
-        # Randomned seeding
-        self.epsilon = 0 
+        # Randomness
+        self.epsilon = 0
+        # Randomness change 
+        self.epsilonChange = EPSILON_DELTA
         # Discount rate
         self.gamma = GAMMA
+        # Set gamma check
+        self.isIncrementing = IS_INCREMENTING
         # Incrementing discount rate
-        self.gammaIncrementing = GAMMA_LOW
+        self.gammaLow = GAMMA_LOW
+        # Delta of gamma
+        self.gammaIncrement = GAMMA_INCREMENT
+        # Learning Rate
+        self.learningRate = LEARNING_RATE
         # Function to call popleft to rewrite memory
         self.memory = deque(maxlen=MAX_MEMORY) 
+        # Size of batch for learning
+        self.batchSize = BATCH_SIZE
+
 
         self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
-        if IS_INCREMENTING and self.gammaIncrementing < self.gamma:
-            self.trainer = QTrainer(self.model, LEARNING_RATE, self.gammaIncrementing)
+        if self.isIncrementing and self.gammaLow < self.gamma:
+            self.trainer = QTrainer(self.model, self.learningRate, self.gammaLow)
         else:
-            self.trainer = QTrainer(self.model, LEARNING_RATE, self.gamma)
+            self.trainer = QTrainer(self.model, self.learningRate, self.gamma)
 
     def getState(self, game):
         head = game.snake[0]
@@ -37,10 +51,10 @@ class Agent:
         # We have to remember that game grid gives us 
         # incrementing "x" to the RIGHT 
         # and "y" in the DOWN direction
-        pointLeft = Point(head.x - BLOCK_SIZE, head.y)
-        pointRight = Point(head.x + BLOCK_SIZE, head.y)
-        pointUp = Point(head.x, head.y - BLOCK_SIZE)
-        pointDown = Point(head.x, head.y + BLOCK_SIZE)
+        pointLeft = Point(head.x - self.blockSize, head.y)
+        pointRight = Point(head.x + self.blockSize, head.y)
+        pointUp = Point(head.x, head.y - self.blockSize)
+        pointDown = Point(head.x, head.y + self.blockSize)
         # Check in which direction snake is going
         directionLeft = game.direction == Direction.LEFT
         directionRight = game.direction == Direction.RIGHT
@@ -85,9 +99,9 @@ class Agent:
         self.memory.append((state, action, reward, nextState, gameOver))
 
     def trainLongMemory(self):  # If lenght of the memory exceeds BATCH_SIZE we can train long memory more efficiently
-        if len(self.memory) > BATCH_SIZE: 
+        if len(self.memory) > self.batchSize: 
             # Take random sample from memory as a tuple
-            miniSample = random.sample(self.memory, BATCH_SIZE) 
+            miniSample = random.sample(self.memory, self.batchSize) 
         else:
             miniSample = self.memory
 
@@ -101,11 +115,11 @@ class Agent:
     def getAction(self, state):
         # Generating random moves -> Tradeoff exploration / exploitantion
         # Epsilon value will be lowered every game
-        self.epsilon = EPSILON_DELTA - self.numberOfGames 
+        self.epsilon = self.epsilonChange - self.numberOfGames 
         move = [0,0,0]
 
         # The higher the epsilon the more random moves will the snake make
-        if random.randint(0,200) < self.epsilon: 
+        if random.randint(0,self.epsilonChange) < self.epsilon: 
             # If the statement is fullfiled, random move will be generated
             moveIndex = random.randint(0,2) 
             # Assign 1 to the move on chosen index to decide what will be the next move
@@ -154,7 +168,8 @@ def train():
             # Train replay memory and plot the results
             game.reset()
             agent.numberOfGames += 1 # Increment the number of games each game
-            agent.gammaIncrementing *= agent.numberOfGames # Gamma Incrementing
+            if agent.gammaLow < agent.gamma:
+                agent.gammaLow += agent.gammaIncrement # Gamma Incrementing
             agent.trainLongMemory()
 
             # Highscore logic -> save only better scored games
