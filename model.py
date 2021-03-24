@@ -5,6 +5,9 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
+class SeqentialQNet(nn.Sequential):
+    pass
+
 class LinearQNet(nn.Module):
     def __init__(self, inputSize, hiddenSize, outputSize):
         super().__init__()

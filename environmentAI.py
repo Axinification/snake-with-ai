@@ -6,7 +6,8 @@ from collections import namedtuple
 import numpy as np
 from variables import (SIZE, TILES, TIME_DELAY, CLOCK_TICK, 
                         START_ROW, START_COLUMN, REWARD, 
-                        REWARD_MULTIPLIER, LOOP_TIME, TIME_PENALTY, EASY_MODE)
+                        REWARD_MULTIPLIER, LOOP_TIME, TIME_PENALTY, 
+                        EASY_MODE, DIRECTION_REWARD, STRAIGHT_LINE_REWARD, COILING_PENALTY)
 import matplotlib.pyplot as plt
 
 pygame.init()
@@ -42,13 +43,15 @@ class Game:
         self.display = pygame.display.set_mode((width, height))
         pygame.display.set_caption('Snake Evironment')
 
+        #Snake turn counters
+        self.rightTurns = 0 # Int for right turns
+        self.leftTurns = 0 # Int for left turns
+
         #Set the clock
         self.clock = pygame.time.Clock()
         self.reset() #Initializing zero state
 
-
-
-    def reset(self):
+    def reset(self): # Restart function
         #Initial game state
         self.direction = Direction.RIGHT # Set the starting direction
         self.head = SNAKE_POSITION # Set the snake starting position
@@ -57,13 +60,13 @@ class Game:
                     Point(self.head.x-BLOCK_SIZE, self.head.y),
                     Point(self.head.x-(2*BLOCK_SIZE), self.head.y)]
 
-        self.score = 0
-        self.snack = None
-        self.randomColor = (random.randrange(20,255),random.randrange(20,255),random.randrange(20,255))
-        self._placeSnack()
+        self.score = 0 # Score
         self.frameIteration = 0 # Used to prevent endless looping
+        self.snack = None # Snack position initiation
+        self.randomColor = (random.randrange(20,255),random.randrange(20,255),random.randrange(20,255))
+        self._placeSnack() # Update snack position
     
-    def takeAction(self, action): # Collect input
+    def takeAction(self, action): # Check input result
         self.frameIteration += 1 # Update frameIteration every step
         self.snackFrameIteration += 1 # Update sncak time counter
 
@@ -72,14 +75,16 @@ class Game:
                 plt.savefig("test.png")
                 pygame.quit()
                 
+        # Check the reward for step
+        self.reward = 0
+        self._directionReward()
+        self._turnReward(action)
         # Move the head
         self._moveSnake(action)
         # Update snake array
         self.snake.insert(0, self.head) 
-        # Check the reward for step
-        self.reward = 0
-        self._directionReward()
-        # print('Reward for step: ', reward)
+        # print('Reward for step: ', self.reward)
+
         # Check if game over
         gameOver = False # First assume that game is not over
         # Game over on collision or when time runs out
@@ -108,9 +113,8 @@ class Game:
 
         # Return game over and score
         return self.reward, gameOver, self.score
-
-    # Determining the next move based on action
-    def _moveSnake(self, action): 
+    
+    def _moveSnake(self, action): # Determining the next move based on action  
         #- [1,0,0] straight
         #- [0,1,0] right turn
         #- [0,0,1] left turn
@@ -147,8 +151,7 @@ class Game:
             
         self.head = Point(x, y) #Update head coordinates
     
-    #Collision detection
-    def onCollision(self, head = None):
+    def onCollision(self, head = None): # Collision detection
         if EASY_MODE:
             if self.direction is Direction.LEFT and head.x < 0: self.head = Point(SIZE, head.y)
             elif self.direction is Direction.RIGHT and head.x > self.width - BLOCK_SIZE: head = Point(-BLOCK_SIZE, head.y)
@@ -168,8 +171,7 @@ class Game:
         
         return False
     
-    #Place snack
-    def _placeSnack(self):
+    def _placeSnack(self): # Place snack
         x = random.randint(0, TILES-1)*BLOCK_SIZE # Get the new x coordinate of snack
         y = random.randint(0, TILES-1)*BLOCK_SIZE # Get the new y coordinate of snack
         self.snackFrameIteration = 0
@@ -178,32 +180,74 @@ class Game:
         # If snack is in snake list spawn snack
         if self.snack in self.snake:
             self._placeSnack()
-
-    # Giving reward for th right direction
-    def _directionReward(self):
+    
+    def _directionReward(self): # Reward for going in the snack direction
         reward = 0
-
         #Rewards for movement
         if self.direction is Direction.RIGHT and self.head.x <= self.snack.x and self.head.y == self.snack.y:
-            reward = 0.6
+            reward = STRAIGHT_LINE_REWARD
         elif self.direction is Direction.RIGHT and self.head.x <= self.snack.x:
-            reward = 0.5
+            reward = DIRECTION_REWARD
         if self.direction is Direction.LEFT and self.head.x >= self.snack.x and self.head.y == self.snack.y:
-            reward = 0.6
+            reward = STRAIGHT_LINE_REWARD
         elif self.direction is Direction.LEFT and self.head.x >= self.snack.x:
-            reward = 0.5
+            reward = DIRECTION_REWARD
         if self.direction is Direction.DOWN and self.head.y <= self.snack.y and self.head.x == self.snack.x:
-            reward = 0.6
+            reward = STRAIGHT_LINE_REWARD
         elif self.direction is Direction.DOWN and self.head.y <= self.snack.y:
-            reward = 0.5
+            reward = DIRECTION_REWARD
         if self.direction is Direction.UP and self.head.y >= self.snack.y and self.head.x == self.snack.x:
-            reward = 0.6
+            reward = STRAIGHT_LINE_REWARD
         elif self.direction is Direction.UP and self.head.y >= self.snack.y:
-            reward = 0.5
-        self.reward = reward
+            reward = DIRECTION_REWARD
+        self.reward += reward
     
-    # Update display
-    def _redrawWindow(self):
+    def _turnReward(self, action): # Turning reward // coiling prevention
+        # [0,1,0] right turn
+        # [0,0,1] left turn
+
+        # If snake made full loop set turns to 0
+        reward = 0
+
+        pointLeft = Point(self.head.x - BLOCK_SIZE, self.head.y)
+        pointUp = Point(self.head.x, self.head.y - BLOCK_SIZE)
+        pointRight = Point(self.head.x + BLOCK_SIZE, self.head.y)
+        pointDown = Point(self.head.x, self.head.y + BLOCK_SIZE)
+
+        # Count the number of turns in a given direction
+        if np.array_equal(action, [0,0,1]): # Turn left
+            self.leftTurns += 1
+            if self.rightTurns != 0:
+                self.rightTurns -= 1
+        elif np.array_equal(action, [0,1,0]): # Turn right
+            self.rightTurns += 1
+            if self.leftTurns != 0:
+                self.leftTurns -= 1
+        
+        # Checks if there was more right or left turns and if action that will be taken increments the higher one
+        checker = (self.rightTurns > self.leftTurns and np.array_equal(action, [0,1,0])) or (self.leftTurns > self.rightTurns and np.array_equal(action, [0,0,1]))
+
+        # If the point ahead is in the snake body
+        if self.direction == Direction.LEFT and pointLeft in self.snake[1:]:
+            if checker:
+                reward = COILING_PENALTY
+        if self.direction == Direction.UP and pointUp in self.snake[1:]:
+            if checker:
+                reward = COILING_PENALTY
+        if self.direction == Direction.RIGHT and pointRight in self.snake[1:]:
+            if checker:
+                reward = COILING_PENALTY
+        if self.direction == Direction.DOWN and pointDown in self.snake[1:]:
+            if checker:
+                reward = COILING_PENALTY
+
+        if self.rightTurns == 4 or self.leftTurns == 4:
+            self.rightTurns = 0
+            self.leftTurns = 0
+
+        self.reward += reward
+    
+    def _redrawWindow(self): # Update display
         self.display.fill(BLACK)
     
         for segment in self.snake:

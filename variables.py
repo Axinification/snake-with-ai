@@ -26,8 +26,11 @@ GAMMA_INCREMENT = 0.002 # Amount of gamma increment
 REWARD = 10 # Both positive and negative // also minimal reward on time penalty
 REWARD_MULTIPLIER = 3 # Multiplies positive reward
 TIME_PENALTY = 0.005 # This times frames after collecting apple or start will be substracted from apple reward
+DIRECTION_REWARD = 0.5
+STRAIGHT_LINE_REWARD = 0.6
+COILING_PENALTY = -1
 
 LOOP_TIME = 100 # Per snake segment
 
 CHECKPOINT_PATH = "./checkpoint"
-LOAD = False
+LOAD = True

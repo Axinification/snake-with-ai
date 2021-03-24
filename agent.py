@@ -206,7 +206,7 @@ def train():
 
         # Save new state
         newState = agent.getState(game)
-        print('Input:', newState)
+
         # Train the short memory
         agent.trainShortMemory(oldState, move, reward, newState, gameOver)
 
@@ -243,6 +243,7 @@ def train():
             agent.plotMeanScores.append(meanScore) # Append the mean score plot with current mean score
             # print('Scores:', plotScores, 'Mean Scores:', plotMeanScores) #Debugging
             # plot(plotScores, plotMeanScores) # Plotting of the scores
+
             plot(agent.plotScores, agent.plotMeanScores)
 
 if __name__ == '__main__':
