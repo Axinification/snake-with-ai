@@ -4,7 +4,7 @@ import random
 from enum import Enum
 from collections import namedtuple
 import numpy as np
-from variables import (SIZE, TILES, TIME_DELAY, CLOCK_TICK, 
+from variables import (PENALTY_MULTIPLIER, SIZE, TILES, TIME_DELAY, CLOCK_TICK, 
                         START_ROW, START_COLUMN, REWARD, 
                         REWARD_MULTIPLIER, LOOP_TIME, TIME_PENALTY, 
                         EASY_MODE, DIRECTION_REWARD, STRAIGHT_LINE_REWARD, COILING_PENALTY)
@@ -75,12 +75,12 @@ class Game:
                 plt.savefig("test.png")
                 pygame.quit()
                 
+        # Move the head
+        self._moveSnake(action)
         # Check the reward for step
         self.reward = 0
         self._directionReward()
         self._turnReward(action)
-        # Move the head
-        self._moveSnake(action)
         # Update snake array
         self.snake.insert(0, self.head) 
         # print('Reward for step: ', self.reward)
@@ -90,7 +90,7 @@ class Game:
         # Game over on collision or when time runs out
         if self.onCollision() or self.frameIteration > LOOP_TIME*len(self.snake):
             gameOver = True # If collision is detected switch gameOver to true
-            self.reward = -REWARD # Return -REWARD if game is lost
+            self.reward += -REWARD*PENALTY_MULTIPLIER # Return -REWARD if game is lost
             return self.reward, gameOver, self.score
             
         # Place new snack or just move
@@ -98,9 +98,9 @@ class Game:
             self.score += 1 # Add point if position of head is the same 
             self._placeSnack() # Place new snack if eaten
             if REWARD*REWARD_MULTIPLIER-self.frameIteration*TIME_PENALTY>REWARD:
-                self.reward = REWARD*REWARD_MULTIPLIER-self.snackFrameIteration*TIME_PENALTY # Give out the reward // Reward lost with time
+                self.reward += REWARD*REWARD_MULTIPLIER-self.snackFrameIteration*TIME_PENALTY # Give out the reward // Reward lost with time
             else:
-                self.reward = REWARD
+                self.reward += REWARD
         else:
             # Pop the tail if no snack is eaten, 
             # otherwise it will stay in one place and the snake will grow constantly
