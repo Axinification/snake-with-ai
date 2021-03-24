@@ -5,7 +5,46 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
+class SeqentialQNet(nn.Sequential):
+    pass
+
 class LinearQNet(nn.Module):
+    def __init__(self, inputSize, hiddenSize, outputSize):
+        super(LinearQNet, self).__init__()
+
+        self.linear1 = nn.Linear(inputSize, hiddenSize)
+        self.linear2 = nn.Linear(hiddenSize, hiddenSize)
+        self.linear3 = nn.Linear(hiddenSize, hiddenSize)
+        self.linear4 = nn.Linear(hiddenSize, outputSize)
+        
+        self.relu = nn.ReLU(inplace=True)
+        self.dropout = nn.Dropout(0.15)
+        self.softmax = nn.Softmax()
+
+    def forward(self, x):
+        x = self.linear1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.linear2(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.linear3(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.linear4(x)
+        x = self.relu(x)
+        x = self.softmax(x)
+        return x
+    
+    # Saving the model
+    def saveModel(self, folder, fileName='model.pth'):
+        modelFolderPath = folder # Model will be saved in the 'model' folder
+        if not os.path.exists(modelFolderPath):
+            os.makedirs(modelFolderPath) # Creating the folder
+        fileName = os.path.join(modelFolderPath, fileName) # Setting filepath for the model
+        torch.save(self.state_dict(), fileName) # Saving the model
+
+# class LinearQNet(nn.Module):
     def __init__(self, inputSize, hiddenSize, outputSize):
         super().__init__()
 
@@ -24,6 +63,7 @@ class LinearQNet(nn.Module):
             os.makedirs(modelFolderPath) # Creating the folder
         fileName = os.path.join(modelFolderPath, fileName) # Setting filepath for the model
         torch.save(self.state_dict(), fileName) # Saving the model
+
 
 
 class QTrainer:
