@@ -33,5 +33,8 @@ COILING_PENALTY = -1
 
 LOOP_TIME = 100 # Per snake segment
 
-CHECKPOINT_PATH = "./checkpoint"
 LOAD = True
+
+
+
+

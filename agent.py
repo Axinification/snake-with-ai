@@ -8,12 +8,57 @@ from model import LinearQNet, QTrainer
 from plotter import plot
 from variables import (MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, 
                         EPSILON_DELTA, GAMMA, GAMMA_LOW, GAMMA_INCREMENT,
-                        IS_INCREMENTING, CHECKPOINT_PATH, LOAD)
+                        IS_INCREMENTING, LOAD)
 
-#Constants
-INPUT_SIZE = 22 # Amount of inputs in state
+#Define Version
+
+def returnInputVersion():
+    print("""Define input version. 
+    f -> Far seeing
+    s -> Short seeing
+    fn -> Far no direction
+    sn -> Short no direction""")
+
+    inputVersion = input("Type one of the options: ")
+
+    if(inputVersion == 'f' or inputVersion == 's' or inputVersion == 'fn' or inputVersion == 'sn'):
+        return inputVersion
+    else:
+        print("Input invalid. Try again.")
+        return returnInputVersion()
+
+INPUT_VERSION = returnInputVersion()
+
+def returnInputSize():
+    if(INPUT_VERSION == 'f'):
+        return 22 # Amount of inputs in state
+    elif(INPUT_VERSION == 'fn'):
+        return 18
+    elif(INPUT_VERSION == 's'):
+        return 15
+    elif(INPUT_VERSION == 'sn'):
+        return 12
+
+INPUT_SIZE = returnInputSize()
 HIDDEN_SIZE = 256 # Amount of hidden nodes // can be changed
 OUTPUT_SIZE = 3 # Amount of actions that AI can take
+
+def returnHiddenLayersAmount():
+    hiddenLayersAmount = input("Define the number of hidden layers, minimum 0: ")
+    if(int(hiddenLayersAmount)<0):
+        print("The number can't be lower than 0!")
+        return returnHiddenLayersAmount()
+    else:
+        return hiddenLayersAmount
+    
+
+HIDDEN_LAYERS_AMOUNT = returnHiddenLayersAmount()
+
+def returnCheckpoint(hiddenAmount, inputVersion):
+    return "/checkpoints/version-"+inputVersion+"-hidden-"+hiddenAmount
+
+CHECKPOINT_PATH = returnCheckpoint(HIDDEN_LAYERS_AMOUNT,INPUT_VERSION)
+
 
 # Agent class
 class Agent: 
@@ -44,8 +89,9 @@ class Agent:
         self.plotScores=[]
         self.plotMeanScores=[]
         self.totalScore = 0
+            
+        self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, HIDDEN_LAYERS_AMOUNT)
 
-        self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
         if LOAD:
             checkpoint = torch.load(os.path.join(CHECKPOINT_PATH, 'checkpoint.pth'))
             model = torch.load(CHECKPOINT_PATH + '/model.pth')
@@ -62,6 +108,9 @@ class Agent:
             self.trainer.optimizer.load_state_dict(checkpoint['optimizer'])
         else:
             self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
+    
+    
+
 
     def getState(self, game):
         head = game.snake[0]
@@ -77,20 +126,22 @@ class Agent:
         pointRightDown = Point(head.x + self.blockSize, head.y + self.blockSize)
         pointDown = Point(head.x, head.y + self.blockSize)
         pointLeftDown = Point(head.x - self.blockSize, head.y + self.blockSize)
-
-        pointFarLeft = Point(head.x - 2*self.blockSize, head.y)
-        pointFarLeftUp = Point(head.x - 2*self.blockSize, head.y - 2*self.blockSize)
-        pointFarUp = Point(head.x, head.y - 2*self.blockSize)
-        pointFarRightUp = Point(head.x + 2*self.blockSize, head.y - 2*self.blockSize)
-        pointFarRight = Point(head.x + 2*self.blockSize, head.y)
-        pointFarRightDown = Point(head.x + 2*self.blockSize, head.y + 2*self.blockSize)
-        pointFarDown = Point(head.x, head.y + 2*self.blockSize)
-        pointFarLeftDown = Point(head.x - 2*self.blockSize, head.y + 2*self.blockSize)
+        
+        if (INPUT_VERSION != "s" or "sn"):
+            pointFarLeft = Point(head.x - 2*self.blockSize, head.y)
+            pointFarLeftUp = Point(head.x - 2*self.blockSize, head.y - 2*self.blockSize)
+            pointFarUp = Point(head.x, head.y - 2*self.blockSize)
+            pointFarRightUp = Point(head.x + 2*self.blockSize, head.y - 2*self.blockSize)
+            pointFarRight = Point(head.x + 2*self.blockSize, head.y)
+            pointFarRightDown = Point(head.x + 2*self.blockSize, head.y + 2*self.blockSize)
+            pointFarDown = Point(head.x, head.y + 2*self.blockSize)
+            pointFarLeftDown = Point(head.x - 2*self.blockSize, head.y + 2*self.blockSize)
         # Check in which direction snake is going
-        directionLeft = game.direction == Direction.LEFT
-        directionRight = game.direction == Direction.RIGHT
-        directionUp = game.direction == Direction.UP
-        directionDown = game.direction == Direction.DOWN
+        if (INPUT_VERSION != "fn" or "sn"):
+            directionLeft = game.direction == Direction.LEFT
+            directionRight = game.direction == Direction.RIGHT
+            directionUp = game.direction == Direction.UP
+            directionDown = game.direction == Direction.DOWN
         # List for collision detection
         state = [ 
             #Danger ahead
@@ -133,8 +184,11 @@ class Agent:
             (directionLeft and game.onCollision(pointRightUp)) or
             (directionRight and game.onCollision(pointLeftDown)) or
             (directionUp and game.onCollision(pointRightDown)) or
-            (directionDown and game.onCollision(pointLeftUp)),
+            (directionDown and game.onCollision(pointLeftUp))
+        ]
 
+        #FAR VERSION
+        far = [
             #Danger far ahead
             (directionLeft and game.onCollision(pointFarLeft)) or
             (directionRight and game.onCollision(pointFarRight)) or
@@ -176,19 +230,28 @@ class Agent:
             (directionRight and game.onCollision(pointFarLeftDown)) or
             (directionUp and game.onCollision(pointFarRightDown)) or
             (directionDown and game.onCollision(pointFarLeftUp)),
+        ]
+        if (INPUT_VERSION != "s" or "sn"):
+            state.extend(far)
 
-            #Move direction
+        #Move direction
+        direction = [
             directionLeft,
             directionRight,
             directionUp,
-            directionDown,
+            directionDown
+        ]
+        if (INPUT_VERSION != "s" or "sn"):
+            state.extend(direction)
 
-            #Snack detection
+        #Snack detection
+        snack = [
             game.snack.x < game.head.x, #Snack to the left
             game.snack.x > game.head.x, #Snack to the right
             game.snack.y > game.head.y, #Snack down
             game.snack.y < game.head.y  #Snack up
-            ]
+        ]
+        state.extend(snack)
         return np.array(state, dtype=int)
 
     def remember(self, state, action, reward, nextState, gameOver): # Save inputs 
