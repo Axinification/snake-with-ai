@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 
 def plot(scores, meanScores):
     plt.ion() # Interactive mode
+    plt.pause(0.0001)
     plt.cla() # Clear current lines
     plt.pause(0.0001)
     plt.xlabel('Number of Games')
