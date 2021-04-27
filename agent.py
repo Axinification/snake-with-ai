@@ -60,8 +60,8 @@ CHECKPOINT_PATH = returnCheckpoint(HIDDEN_LAYERS_AMOUNT,INPUT_VERSION)
 
 def loadInfo(self):
         if LOAD:
-            if os.path.exists(CHECKPOINT_PATH+'/checkpoint.pth') & os.path.exists(CHECKPOINT_PATH+'/model.pth') :
-                checkpoint = torch.load(CHECKPOINT_PATH+'/checkpoint.pth')
+            if os.path.exists(CHECKPOINT_PATH):
+                checkpoint = torch.load(CHECKPOINT_PATH + '/checkpoint.pth')
                 model = torch.load(CHECKPOINT_PATH + '/model.pth')
                 self.numberOfGames = checkpoint['numberOfGames']
                 self.learningRate = checkpoint['learningRate']
@@ -72,7 +72,7 @@ def loadInfo(self):
                 self.model.load_state_dict(model)
                 self.model.eval()
                 self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
-                checkpoint = torch.load(os.path.join(CHECKPOINT_PATH, 'checkpoint.pth'))
+                checkpoint = torch.load(CHECKPOINT_PATH + 'checkpoint.pth')
                 self.trainer.optimizer.load_state_dict(checkpoint['optimizer'])
             else:
                 self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
@@ -108,7 +108,7 @@ class Agent:
         self.plotScores=[]
         self.plotMeanScores=[]
         self.totalScore = 0
-        self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
+        self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, HIDDEN_LAYERS_AMOUNT)
         loadInfo(self)
 
     def getState(self, game):
@@ -303,7 +303,6 @@ class Agent:
 
 def save(folderPath):
     agent = Agent()
-    print("Check agent",agent)
     agent.model.saveModel(folderPath) # Save the model
     agent.trainer.saveParameters( agent.plotScores, agent.plotMeanScores, agent.totalScore, agent.numberOfGames, folderPath) # Save parameters  
 

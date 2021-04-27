@@ -5,87 +5,44 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
-
+#TODO: Optional Sequential
 class SeqentialQNet(nn.Sequential):
     pass
 
-# class LinearQNet(nn.Module):
-#     def __init__(self, inputSize, hiddenSize, outputSize, hiddenLayersAmount):
-#         super(LinearQNet, self).__init__()
-#         self.hiddenLayersAmount = int(hiddenLayersAmount)
-#         self.input = nn.Linear(inputSize, hiddenSize)
-#         # for number in range(self.hiddenLayersAmount-1):
-#         #     self.dictionary[number] = nn.Linear(hiddenSize, hiddenSize)
-#         self.output = nn.Linear(hiddenSize, outputSize)
-        
-#         self.relu = nn.ReLU(inplace=True)
-#         self.dropout = nn.Dropout(0.15)
-#         self.softmax = nn.Softmax()
-        
-
-#     def forward(self, x):
-#         x = self.input(x)
-#         x = self.relu(x)
-        
-#         # for number in range(self.hiddenLayersAmount):
-#         #     x = self.dropout(x)
-#         #     x = self.dictionary[number]
-#         #     x = self.relu(x)
-#         x = self.dropout(x)
-#         x = self.output(x)
-#         x = self.relu(x)
-#         x = self.softmax(x)
-#         return x
 class LinearQNet(nn.Module):
     def __init__(self, inputSize, hiddenSize, outputSize, hiddenLayersAmount):
         super(LinearQNet, self).__init__()
+        self.input = nn.Linear(inputSize, hiddenSize)
 
         self.hiddenLayersAmount = int(hiddenLayersAmount)
-        self.input = nn.Linear(inputSize, hiddenSize)
-        # for number in range(self.hiddenLayersAmount-1):
-        #     self.dictionary[number] = nn.Linear(hiddenSize, hiddenSize)
+        self.hiddenLayers = {}
+
+        #Set hidden layers according to the amount given
+        if (self.hiddenLayersAmount>0):
+            for layer in range(self.hiddenLayersAmount):
+                self.hiddenLayers[layer] = nn.Linear(hiddenSize, hiddenSize)
+        
         self.output = nn.Linear(hiddenSize, outputSize)
         
         self.relu = nn.ReLU(inplace=True)
         self.dropout = nn.Dropout(0.15)
-        self.softmax = nn.Softmax(dim=0)
-
+        self.softmax = nn.Softmax(dim=-1)
+        
+        # Forwarding
     def forward(self, x):
-        x = self.linear1(x)
+        x = self.input(x)
         x = self.relu(x)
         x = self.dropout(x)
-        x = self.linear2(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.linear3(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.linear4(x)
+        # Forwarding with set amount of hidden layers
+        if (self.hiddenLayersAmount>0):
+            for hiddenLayer in self.hiddenLayers.values():
+                x = hiddenLayer(x)
+                x = self.relu(x)
+                x = self.dropout(x)
+        x = self.output(x)
         x = self.relu(x)
         x = self.softmax(x)
         return x
-    
-    # class LinearQNet(nn.Module):
-    #     def __init__(self, inputSize, hiddenSize, outputSize):
-    #         super().__init__()
-
-    #         self.input = nn.Linear(inputSize, hiddenSize)
-    #         # self.hidden = nn.Linear(hiddenSize, hiddenSize)
-    #         self.output = nn.Linear(hiddenSize, outputSize)
-
-    #     def forward(self, input):
-    #         input = F.relu(self.input(input))
-    #         # input = F.relu(self.hidden(input))
-    #         input = self.output(input)
-    #         return input
-    
-    # # Saving the model
-    # def saveModel(self, folder, fileName='model.pth'):
-    #     modelFolderPath = folder # Model will be saved in the 'model' folder
-    #     if not os.path.exists(modelFolderPath):
-    #         os.makedirs(modelFolderPath) # Creating the folder
-    #     fileName = os.path.join(modelFolderPath, fileName) # Setting filepath for the model
-    #     torch.save(self.state_dict(), fileName) # Saving the model
 
         # Saving the model
     def saveModel(self, folder):
