@@ -5,26 +5,52 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
+#TODO: Optional Sequential
+class SeqentialQNet(nn.Sequential):
+    pass
+
 class LinearQNet(nn.Module):
-    def __init__(self, inputSize, hiddenSize, outputSize):
-        super().__init__()
+    def __init__(self, inputSize, hiddenSize, outputSize, hiddenLayersAmount):
+        super(LinearQNet, self).__init__()
+        self.input = nn.Linear(inputSize, hiddenSize)
 
-        self.linear1 = nn.Linear(inputSize, hiddenSize)
-        self.linear2 = nn.Linear(hiddenSize, outputSize)
+        self.hiddenLayersAmount = int(hiddenLayersAmount)
+        self.hiddenLayers = {}
 
-    def forward(self, input):
-        input = F.relu(self.linear1(input))
-        input = self.linear2(input)
-        return input
-    
-    # Saving the model
-    def saveModel(self, folder, fileName='model.pth'):
-        modelFolderPath = folder # Model will be saved in the 'model' folder
-        if not os.path.exists(modelFolderPath):
-            os.makedirs(modelFolderPath) # Creating the folder
-        fileName = os.path.join(modelFolderPath, fileName) # Setting filepath for the model
+        #Set hidden layers according to the amount given
+        if (self.hiddenLayersAmount>0):
+            for layer in range(self.hiddenLayersAmount):
+                self.hiddenLayers[layer] = nn.Linear(hiddenSize, hiddenSize)
+        
+        self.output = nn.Linear(hiddenSize, outputSize)
+        
+        self.relu = nn.ReLU(inplace=True)
+        self.dropout = nn.Dropout(0.15)
+        self.softmax = nn.Softmax(dim=-1)
+        
+        # Forwarding
+    def forward(self, x):
+        x = self.input(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        # Forwarding with set amount of hidden layers
+        if (self.hiddenLayersAmount>0):
+            for hiddenLayer in self.hiddenLayers.values():
+                x = hiddenLayer(x)
+                x = self.relu(x)
+                x = self.dropout(x)
+        x = self.output(x)
+        x = self.relu(x)
+        x = self.softmax(x)
+        return x
+
+        # Saving the model
+    def saveModel(self, folder):
+        if not os.path.exists(folder):
+            os.makedirs(folder) # Creating the folder
+        # fileName = os.path.join(folder, fileName) # Setting filepath for the model
+        fileName = folder+"/model.pth"
         torch.save(self.state_dict(), fileName) # Saving the model
-
 
 class QTrainer:
     def __init__(self, model, learningRate, gamma):
@@ -34,11 +60,11 @@ class QTrainer:
         self.optimizer = optim.Adam(model.parameters(), self.learningRate) # Optimization using pyTorch
         self.criterion = nn.MSELoss() # Loss function
 
-    def saveParameters(self, scores, meanScores, totalScore, numberOfGames, folder, fileName='checkpoint.pth'):
-        parametersFolderPath = folder
-        if not os.path.exists(parametersFolderPath):
-            os.makedirs(parametersFolderPath) # Creating the folder
-        fileName = os.path.join(parametersFolderPath, fileName) # Setting filepath for the model
+    def saveParameters(self, scores, meanScores, totalScore, numberOfGames, folder):
+        if not os.path.exists(folder):
+            os.makedirs(folder) # Creating the folder
+        fileName = os.path.join(folder, "checkpoint.pth") # Setting filepath for the model
+        # fileName = folder + "/checkpoint.pth"
         
         checkpoint = {
             'scores': scores,
