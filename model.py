@@ -5,61 +5,79 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
-dictionary = {}
-
 
 class SeqentialQNet(nn.Sequential):
     pass
 
+# class LinearQNet(nn.Module):
+#     def __init__(self, inputSize, hiddenSize, outputSize, hiddenLayersAmount):
+#         super(LinearQNet, self).__init__()
+#         self.hiddenLayersAmount = int(hiddenLayersAmount)
+#         self.input = nn.Linear(inputSize, hiddenSize)
+#         # for number in range(self.hiddenLayersAmount-1):
+#         #     self.dictionary[number] = nn.Linear(hiddenSize, hiddenSize)
+#         self.output = nn.Linear(hiddenSize, outputSize)
+        
+#         self.relu = nn.ReLU(inplace=True)
+#         self.dropout = nn.Dropout(0.15)
+#         self.softmax = nn.Softmax()
+        
+
+#     def forward(self, x):
+#         x = self.input(x)
+#         x = self.relu(x)
+        
+#         # for number in range(self.hiddenLayersAmount):
+#         #     x = self.dropout(x)
+#         #     x = self.dictionary[number]
+#         #     x = self.relu(x)
+#         x = self.dropout(x)
+#         x = self.output(x)
+#         x = self.relu(x)
+#         x = self.softmax(x)
+#         return x
 class LinearQNet(nn.Module):
-
-
     def __init__(self, inputSize, hiddenSize, outputSize, hiddenLayersAmount):
         super(LinearQNet, self).__init__()
 
         self.hiddenLayersAmount = int(hiddenLayersAmount)
         self.input = nn.Linear(inputSize, hiddenSize)
-        for number in range(self.hiddenLayersAmount):
-            dictionary[number] = nn.Linear(hiddenSize, hiddenSize)
+        # for number in range(self.hiddenLayersAmount-1):
+        #     self.dictionary[number] = nn.Linear(hiddenSize, hiddenSize)
         self.output = nn.Linear(hiddenSize, outputSize)
         
         self.relu = nn.ReLU(inplace=True)
         self.dropout = nn.Dropout(0.15)
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=0)
 
     def forward(self, x):
-        x = self.input(x)
+        x = self.linear1(x)
         x = self.relu(x)
-        
-        for number in range(self.hiddenLayersAmount):
-            x = self.dropout(x)
-            x = dictionary[number]
-            x = self.relu(x)
         x = self.dropout(x)
-        x = self.output(x)
+        x = self.linear2(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.linear3(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.linear4(x)
         x = self.relu(x)
         x = self.softmax(x)
         return x
     
-    # Saving the model
-    def saveModel(self, folder, fileName='model.pth'):
-        modelFolderPath = folder # Model will be saved in the 'model' folder
-        if not os.path.exists(modelFolderPath):
-            os.makedirs(modelFolderPath) # Creating the folder
-        fileName = os.path.join(modelFolderPath, fileName) # Setting filepath for the model
-        torch.save(self.state_dict(), fileName) # Saving the model
+    # class LinearQNet(nn.Module):
+    #     def __init__(self, inputSize, hiddenSize, outputSize):
+    #         super().__init__()
 
-# class LinearQNet(nn.Module):
-    # def __init__(self, inputSize, hiddenSize, outputSize):
-    #     super().__init__()
+    #         self.input = nn.Linear(inputSize, hiddenSize)
+    #         # self.hidden = nn.Linear(hiddenSize, hiddenSize)
+    #         self.output = nn.Linear(hiddenSize, outputSize)
 
-    #     self.linear1 = nn.Linear(inputSize, hiddenSize)
-    #     self.linear2 = nn.Linear(hiddenSize, outputSize)
-
-    # def forward(self, input):
-    #     input = F.relu(self.linear1(input))
-    #     input = self.linear2(input)
-    #     return input
+    #     def forward(self, input):
+    #         input = F.relu(self.input(input))
+    #         # input = F.relu(self.hidden(input))
+    #         input = self.output(input)
+    #         return input
     
     # # Saving the model
     # def saveModel(self, folder, fileName='model.pth'):
@@ -69,7 +87,13 @@ class LinearQNet(nn.Module):
     #     fileName = os.path.join(modelFolderPath, fileName) # Setting filepath for the model
     #     torch.save(self.state_dict(), fileName) # Saving the model
 
-
+        # Saving the model
+    def saveModel(self, folder):
+        if not os.path.exists(folder):
+            os.makedirs(folder) # Creating the folder
+        # fileName = os.path.join(folder, fileName) # Setting filepath for the model
+        fileName = folder+"/model.pth"
+        torch.save(self.state_dict(), fileName) # Saving the model
 
 class QTrainer:
     def __init__(self, model, learningRate, gamma):
@@ -79,10 +103,11 @@ class QTrainer:
         self.optimizer = optim.Adam(model.parameters(), self.learningRate) # Optimization using pyTorch
         self.criterion = nn.MSELoss() # Loss function
 
-    def saveParameters(self, scores, meanScores, totalScore, numberOfGames, folder, fileName='checkpoint.pth'):
+    def saveParameters(self, scores, meanScores, totalScore, numberOfGames, folder):
         if not os.path.exists(folder):
-            os.makedirs(folder,mode=0o777, exist_ok=True) # Creating the folder
-        fileName = os.path.join(folder, fileName) # Setting filepath for the model
+            os.makedirs(folder) # Creating the folder
+        fileName = os.path.join(folder, "checkpoint.pth") # Setting filepath for the model
+        # fileName = folder + "/checkpoint.pth"
         
         checkpoint = {
             'scores': scores,

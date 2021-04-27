@@ -33,7 +33,7 @@ COILING_PENALTY = -1
 
 LOOP_TIME = 100 # Per snake segment
 
-LOAD = True
+LOAD = False
 
 
 

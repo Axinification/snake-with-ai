@@ -50,15 +50,34 @@ def returnHiddenLayersAmount():
         return returnHiddenLayersAmount()
     else:
         return hiddenLayersAmount
-    
 
 HIDDEN_LAYERS_AMOUNT = returnHiddenLayersAmount()
 
 def returnCheckpoint(hiddenAmount, inputVersion):
-    return "/checkpoints/version-"+inputVersion+"-hidden-"+hiddenAmount
+    return "checkpoints/version-"+inputVersion+"-hidden-"+hiddenAmount
 
 CHECKPOINT_PATH = returnCheckpoint(HIDDEN_LAYERS_AMOUNT,INPUT_VERSION)
 
+def loadInfo(self):
+        if LOAD:
+            if os.path.exists(CHECKPOINT_PATH+'/checkpoint.pth') & os.path.exists(CHECKPOINT_PATH+'/model.pth') :
+                checkpoint = torch.load(CHECKPOINT_PATH+'/checkpoint.pth')
+                model = torch.load(CHECKPOINT_PATH + '/model.pth')
+                self.numberOfGames = checkpoint['numberOfGames']
+                self.learningRate = checkpoint['learningRate']
+                self.currentGamma = checkpoint['gamma']
+                self.plotScores = checkpoint['scores']
+                self.plotMeanScores = checkpoint['meanScores']
+                self.totalScore = checkpoint['totalScore']
+                self.model.load_state_dict(model)
+                self.model.eval()
+                self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
+                checkpoint = torch.load(os.path.join(CHECKPOINT_PATH, 'checkpoint.pth'))
+                self.trainer.optimizer.load_state_dict(checkpoint['optimizer'])
+            else:
+                self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
+        else:
+                self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
 
 # Agent class
 class Agent: 
@@ -89,32 +108,11 @@ class Agent:
         self.plotScores=[]
         self.plotMeanScores=[]
         self.totalScore = 0
-            
-        self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, HIDDEN_LAYERS_AMOUNT)
-
-        if LOAD:
-            checkpoint = torch.load(os.path.join(CHECKPOINT_PATH, 'checkpoint.pth'))
-            model = torch.load(CHECKPOINT_PATH + '/model.pth')
-            self.numberOfGames = checkpoint['numberOfGames']
-            self.learningRate = checkpoint['learningRate']
-            self.currentGamma = checkpoint['gamma']
-            self.plotScores = checkpoint['scores']
-            self.plotMeanScores = checkpoint['meanScores']
-            self.totalScore = checkpoint['totalScore']
-            self.model.load_state_dict(model)
-            self.model.eval()
-            self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
-            checkpoint = torch.load(os.path.join(CHECKPOINT_PATH, 'checkpoint.pth'))
-            self.trainer.optimizer.load_state_dict(checkpoint['optimizer'])
-        else:
-            self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
-    
-    
-
+        self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
+        loadInfo(self)
 
     def getState(self, game):
         head = game.snake[0]
-
         # We have to remember that game grid gives us 
         # incrementing "x" to the RIGHT 
         # and "y" in the DOWN direction
@@ -303,6 +301,12 @@ class Agent:
         else:
             return self.useMemory(state, move)
 
+def save(folderPath):
+    agent = Agent()
+    print("Check agent",agent)
+    agent.model.saveModel(folderPath) # Save the model
+    agent.trainer.saveParameters( agent.plotScores, agent.plotMeanScores, agent.totalScore, agent.numberOfGames, folderPath) # Save parameters  
+
 def train():
     record = 0
     agent = Agent()
@@ -346,8 +350,7 @@ def train():
                 record = score # Set record to score
                 
             #Saving
-            agent.model.saveModel(CHECKPOINT_PATH) # Save the model
-            agent.trainer.saveParameters( agent.plotScores, agent.plotMeanScores, agent.totalScore, agent.numberOfGames, CHECKPOINT_PATH) # Save parameters    
+            save(CHECKPOINT_PATH)
             
             print('Game:', agent.numberOfGames, 'Score:', score, 'Record:', record, 'Gamma:', agent.currentGamma)
             
