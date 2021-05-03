@@ -37,7 +37,7 @@ def returnInputSize():
     elif(INPUT_VERSION == 's'):
         return 15
     elif(INPUT_VERSION == 'sn'):
-        return 12
+        return 11
 
 INPUT_SIZE = returnInputSize()
 HIDDEN_SIZE = 256 # Amount of hidden nodes // can be changed
@@ -108,7 +108,14 @@ class Agent:
         self.plotScores=[]
         self.plotMeanScores=[]
         self.totalScore = 0
-        self.model = LinearQNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, HIDDEN_LAYERS_AMOUNT)
+
+        self.inputVersion = INPUT_VERSION
+        self.inputSize = INPUT_SIZE
+
+        self.state=[]
+        
+        
+        self.model = LinearQNet(self.inputSize, HIDDEN_SIZE, OUTPUT_SIZE, HIDDEN_LAYERS_AMOUNT)
         loadInfo(self)
 
     def getState(self, game):
@@ -125,23 +132,22 @@ class Agent:
         pointDown = Point(head.x, head.y + self.blockSize)
         pointLeftDown = Point(head.x - self.blockSize, head.y + self.blockSize)
         
-        if (INPUT_VERSION != "s" or "sn"):
-            pointFarLeft = Point(head.x - 2*self.blockSize, head.y)
-            pointFarLeftUp = Point(head.x - 2*self.blockSize, head.y - 2*self.blockSize)
-            pointFarUp = Point(head.x, head.y - 2*self.blockSize)
-            pointFarRightUp = Point(head.x + 2*self.blockSize, head.y - 2*self.blockSize)
-            pointFarRight = Point(head.x + 2*self.blockSize, head.y)
-            pointFarRightDown = Point(head.x + 2*self.blockSize, head.y + 2*self.blockSize)
-            pointFarDown = Point(head.x, head.y + 2*self.blockSize)
-            pointFarLeftDown = Point(head.x - 2*self.blockSize, head.y + 2*self.blockSize)
+        pointFarLeft = Point(head.x - 2*self.blockSize, head.y)
+        pointFarLeftUp = Point(head.x - 2*self.blockSize, head.y - 2*self.blockSize)
+        pointFarUp = Point(head.x, head.y - 2*self.blockSize)
+        pointFarRightUp = Point(head.x + 2*self.blockSize, head.y - 2*self.blockSize)
+        pointFarRight = Point(head.x + 2*self.blockSize, head.y)
+        pointFarRightDown = Point(head.x + 2*self.blockSize, head.y + 2*self.blockSize)
+        pointFarDown = Point(head.x, head.y + 2*self.blockSize)
+        pointFarLeftDown = Point(head.x - 2*self.blockSize, head.y + 2*self.blockSize)
+
         # Check in which direction snake is going
-        if (INPUT_VERSION != "fn" or "sn"):
-            directionLeft = game.direction == Direction.LEFT
-            directionRight = game.direction == Direction.RIGHT
-            directionUp = game.direction == Direction.UP
-            directionDown = game.direction == Direction.DOWN
+        directionLeft = game.direction == Direction.LEFT
+        directionRight = game.direction == Direction.RIGHT
+        directionUp = game.direction == Direction.UP
+        directionDown = game.direction == Direction.DOWN
         # List for collision detection
-        state = [ 
+        self.state = [ 
             #Danger ahead
             (directionLeft and game.onCollision(pointLeft)) or
             (directionRight and game.onCollision(pointRight)) or
@@ -185,62 +191,62 @@ class Agent:
             (directionDown and game.onCollision(pointLeftUp))
         ]
 
-        #FAR VERSION
-        far = [
-            #Danger far ahead
-            (directionLeft and game.onCollision(pointFarLeft)) or
-            (directionRight and game.onCollision(pointFarRight)) or
-            (directionUp and game.onCollision(pointFarUp)) or
-            (directionDown and game.onCollision(pointFarDown)),
+        if self.inputVersion == ("f" or "fn"):
+            #FAR VERSION
+            far = [
+                #Danger far ahead
+                (directionLeft and game.onCollision(pointFarLeft)) or
+                (directionRight and game.onCollision(pointFarRight)) or
+                (directionUp and game.onCollision(pointFarUp)) or
+                (directionDown and game.onCollision(pointFarDown)),
 
-            #Danger far to the right
-            (directionLeft and game.onCollision(pointFarUp)) or
-            (directionRight and game.onCollision(pointFarDown)) or
-            (directionUp and game.onCollision(pointFarRight)) or
-            (directionDown and game.onCollision(pointFarLeft)),
+                #Danger far to the right
+                (directionLeft and game.onCollision(pointFarUp)) or
+                (directionRight and game.onCollision(pointFarDown)) or
+                (directionUp and game.onCollision(pointFarRight)) or
+                (directionDown and game.onCollision(pointFarLeft)),
 
-            #Danger far to the left
-            (directionLeft and game.onCollision(pointFarDown)) or
-            (directionRight and game.onCollision(pointFarUp)) or
-            (directionUp and game.onCollision(pointFarLeft)) or
-            (directionDown and game.onCollision(pointFarRight)),
+                #Danger far to the left
+                (directionLeft and game.onCollision(pointFarDown)) or
+                (directionRight and game.onCollision(pointFarUp)) or
+                (directionUp and game.onCollision(pointFarLeft)) or
+                (directionDown and game.onCollision(pointFarRight)),
 
-            #Danger far to the left forward
-            (directionLeft and game.onCollision(pointFarLeftDown)) or
-            (directionRight and game.onCollision(pointFarRightUp)) or
-            (directionUp and game.onCollision(pointFarLeftUp)) or
-            (directionDown and game.onCollision(pointFarRightDown)),
+                #Danger far to the left forward
+                (directionLeft and game.onCollision(pointFarLeftDown)) or
+                (directionRight and game.onCollision(pointFarRightUp)) or
+                (directionUp and game.onCollision(pointFarLeftUp)) or
+                (directionDown and game.onCollision(pointFarRightDown)),
 
-            #Danger far to the right forward
-            (directionLeft and game.onCollision(pointFarLeftUp)) or
-            (directionRight and game.onCollision(pointFarRightDown)) or
-            (directionUp and game.onCollision(pointFarRightUp)) or
-            (directionDown and game.onCollision(pointFarLeftDown)),
+                #Danger far to the right forward
+                (directionLeft and game.onCollision(pointFarLeftUp)) or
+                (directionRight and game.onCollision(pointFarRightDown)) or
+                (directionUp and game.onCollision(pointFarRightUp)) or
+                (directionDown and game.onCollision(pointFarLeftDown)),
 
-            #Danger far to the left backward
-            (directionLeft and game.onCollision(pointFarRightDown)) or
-            (directionRight and game.onCollision(pointFarLeftUp)) or
-            (directionUp and game.onCollision(pointFarLeftDown)) or
-            (directionDown and game.onCollision(pointFarRightUp)),
+                #Danger far to the left backward
+                (directionLeft and game.onCollision(pointFarRightDown)) or
+                (directionRight and game.onCollision(pointFarLeftUp)) or
+                (directionUp and game.onCollision(pointFarLeftDown)) or
+                (directionDown and game.onCollision(pointFarRightUp)),
 
-            #Danger far to the right backward
-            (directionLeft and game.onCollision(pointFarRightUp)) or
-            (directionRight and game.onCollision(pointFarLeftDown)) or
-            (directionUp and game.onCollision(pointFarRightDown)) or
-            (directionDown and game.onCollision(pointFarLeftUp)),
-        ]
-        if (INPUT_VERSION != "s" or "sn"):
-            state.extend(far)
+                #Danger far to the right backward
+                (directionLeft and game.onCollision(pointFarRightUp)) or
+                (directionRight and game.onCollision(pointFarLeftDown)) or
+                (directionUp and game.onCollision(pointFarRightDown)) or
+                (directionDown and game.onCollision(pointFarLeftUp)),
+            ]
+            self.state.extend(far)
 
         #Move direction
-        direction = [
-            directionLeft,
-            directionRight,
-            directionUp,
-            directionDown
-        ]
-        if (INPUT_VERSION != "s" or "sn"):
-            state.extend(direction)
+        if self.inputVersion == ("f" or "s"):
+            direction = [
+                directionLeft,
+                directionRight,
+                directionUp,
+                directionDown
+            ]
+            self.state.extend(direction)
 
         #Snack detection
         snack = [
@@ -249,8 +255,8 @@ class Agent:
             game.snack.y > game.head.y, #Snack down
             game.snack.y < game.head.y  #Snack up
         ]
-        state.extend(snack)
-        return np.array(state, dtype=int)
+        self.state.extend(snack)
+        return np.array(self.state, dtype=int)
 
     def remember(self, state, action, reward, nextState, gameOver): # Save inputs 
         # If MAX_MEMORY is reached popleft // return Tuple
