@@ -191,7 +191,7 @@ class Agent:
             (directionDown and game.onCollision(pointLeftUp))
         ]
 
-        if self.inputVersion == ("f" or "fn"):
+        if self.inputVersion == "f" or self.inputVersion == "fn":
             #FAR VERSION
             far = [
                 #Danger far ahead
@@ -239,7 +239,7 @@ class Agent:
             self.state.extend(far)
 
         #Move direction
-        if self.inputVersion == ("f" or "s"):
+        if self.inputVersion == "f" or self.inputVersion == "s":
             direction = [
                 directionLeft,
                 directionRight,

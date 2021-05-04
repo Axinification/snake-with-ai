@@ -35,7 +35,7 @@ LOOP_TIME = 100 # Per snake segment
 
 LOAD = False
 
-AUTO_TRAIN = TRUE
+AUTO_TRAIN = True
 
 
 
