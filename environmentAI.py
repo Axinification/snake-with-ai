@@ -72,7 +72,6 @@ class Game:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                plt.savefig("test.png")
                 pygame.quit()
                 
         # Move the head

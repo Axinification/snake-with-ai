@@ -1,3 +1,5 @@
+from matplotlib import pyplot as plt
+import pygame
 import torch 
 import random
 import numpy as np
@@ -6,12 +8,11 @@ from collections import deque
 from environmentAI import Game, Direction, Point, BLOCK_SIZE
 from model import LinearQNet, QTrainer
 from plotter import plot
-from variables import (MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, 
+from variables import (LIVE_PLOT, MAX_MEMORY, BATCH_SIZE, LEARNING_RATE,
                         EPSILON_DELTA, GAMMA, GAMMA_LOW, GAMMA_INCREMENT,
-                        IS_INCREMENTING, LOAD)
+                        IS_INCREMENTING, LOAD, TRAIN_LOOPS)
 
 #Define Version
-
 def returnInputVersion():
     print("""Define input version. 
     f -> Far seeing
@@ -29,6 +30,16 @@ def returnInputVersion():
 
 INPUT_VERSION = returnInputVersion()
 
+def returnHiddenLayersAmount():
+    hiddenLayersAmount = input("Define the number of hidden layers, minimum 0: ")
+    if(int(hiddenLayersAmount)<0):
+        print("The number can't be lower than 0!")
+        return returnHiddenLayersAmount()
+    else:
+        return hiddenLayersAmount
+
+HIDDEN_LAYERS_AMOUNT = returnHiddenLayersAmount()
+
 def returnInputSize():
     if(INPUT_VERSION == 'f'):
         return 22 # Amount of inputs in state
@@ -42,16 +53,6 @@ def returnInputSize():
 INPUT_SIZE = returnInputSize()
 HIDDEN_SIZE = 256 # Amount of hidden nodes // can be changed
 OUTPUT_SIZE = 3 # Amount of actions that AI can take
-
-def returnHiddenLayersAmount():
-    hiddenLayersAmount = input("Define the number of hidden layers, minimum 0: ")
-    if(int(hiddenLayersAmount)<0):
-        print("The number can't be lower than 0!")
-        return returnHiddenLayersAmount()
-    else:
-        return hiddenLayersAmount
-
-HIDDEN_LAYERS_AMOUNT = returnHiddenLayersAmount()
 
 def returnCheckpoint(hiddenAmount, inputVersion):
     return "checkpoints/version-"+inputVersion+"-hidden-"+hiddenAmount
@@ -72,7 +73,7 @@ def loadInfo(self):
                 self.model.load_state_dict(model)
                 self.model.eval()
                 self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
-                checkpoint = torch.load(CHECKPOINT_PATH + 'checkpoint.pth')
+                checkpoint = torch.load(CHECKPOINT_PATH + '/checkpoint.pth')
                 self.trainer.optimizer.load_state_dict(checkpoint['optimizer'])
             else:
                 self.trainer = QTrainer(self.model, self.learningRate, self.currentGamma)
@@ -114,7 +115,6 @@ class Agent:
 
         self.state=[]
         
-        
         self.model = LinearQNet(self.inputSize, HIDDEN_SIZE, OUTPUT_SIZE, HIDDEN_LAYERS_AMOUNT)
         loadInfo(self)
 
@@ -123,6 +123,7 @@ class Agent:
         # We have to remember that game grid gives us 
         # incrementing "x" to the RIGHT 
         # and "y" in the DOWN direction
+        pointLeftDown = Point(head.x - self.blockSize, head.y + self.blockSize)
         pointLeft = Point(head.x - self.blockSize, head.y)
         pointLeftUp = Point(head.x - self.blockSize, head.y - self.blockSize)
         pointUp = Point(head.x, head.y - self.blockSize)
@@ -130,7 +131,7 @@ class Agent:
         pointRight = Point(head.x + self.blockSize, head.y)
         pointRightDown = Point(head.x + self.blockSize, head.y + self.blockSize)
         pointDown = Point(head.x, head.y + self.blockSize)
-        pointLeftDown = Point(head.x - self.blockSize, head.y + self.blockSize)
+        
         
         pointFarLeft = Point(head.x - 2*self.blockSize, head.y)
         pointFarLeftUp = Point(head.x - 2*self.blockSize, head.y - 2*self.blockSize)
@@ -336,37 +337,42 @@ def train():
         # Remember retrurned values
         agent.remember(oldState, move, reward, newState, gameOver)
 
-        if gameOver:
-            # Train replay memory and plot the results
-            game.reset()
-            agent.numberOfGames += 1 # Increment the number of games each game
-            if agent.isIncrementing and agent.currentGamma < agent.gamma:
-                if agent.numberOfGames > agent.epsilonChange:
-                    agent.currentGamma += agent.gammaIncrement # Gamma Incrementing
-                agent.currentGamma = round(agent.currentGamma, 3)
-                agent.trainer = QTrainer(agent.model, agent.learningRate, agent.currentGamma)
-            else:
-                agent.currentGamma = agent.gamma
-                agent.trainer = QTrainer(agent.model, agent.learningRate, agent.gamma)
-            agent.trainLongMemory()
+        if agent.numberOfGames <= TRAIN_LOOPS:
+            if gameOver:
+                # Train replay memory and plot the results
+                game.reset()
+                agent.numberOfGames += 1 # Increment the number of games each game
+                if agent.isIncrementing and agent.currentGamma < agent.gamma:
+                    if agent.numberOfGames > agent.epsilonChange:
+                        agent.currentGamma += agent.gammaIncrement # Gamma Incrementing
+                    agent.currentGamma = round(agent.currentGamma, 3)
+                    agent.trainer = QTrainer(agent.model, agent.learningRate, agent.currentGamma)
+                else:
+                    agent.currentGamma = agent.gamma
+                    agent.trainer = QTrainer(agent.model, agent.learningRate, agent.gamma)
+                agent.trainLongMemory()
 
-            # Highscore logic -> save only better scored games
-            if score > record:
-                record = score # Set record to score
+                # Highscore logic -> save only better scored games
+                if score > record:
+                    record = score # Set record to score
+                    
+                #Saving
+                save(CHECKPOINT_PATH)
                 
-            #Saving
-            save(CHECKPOINT_PATH)
-            
-            print('Game:', agent.numberOfGames, 'Score:', score, 'Record:', record, 'Gamma:', agent.currentGamma)
-            
-            agent.plotScores.append(score) # Append the plot scores list with score
-            agent.totalScore += score # Add current score to score total
-            meanScore = agent.totalScore / agent.numberOfGames # Calculate mean score using total
-            agent.plotMeanScores.append(meanScore) # Append the mean score plot with current mean score
-            # print('Scores:', plotScores, 'Mean Scores:', plotMeanScores) #Debugging
-            # plot(plotScores, plotMeanScores) # Plotting of the scores
-
+                print('Game:', agent.numberOfGames, 'Score:', score, 'Record:', record, 'Gamma:', agent.currentGamma)
+                
+                agent.plotScores.append(score) # Append the plot scores list with score
+                agent.totalScore += score # Add current score to score total
+                meanScore = agent.totalScore / agent.numberOfGames # Calculate mean score using total
+                agent.plotMeanScores.append(meanScore) # Append the mean score plot with current mean score
+                # print('Scores:', plotScores, 'Mean Scores:', plotMeanScores) #Debugging
+                # plot(plotScores, plotMeanScores) # Plotting of the scores
+                if LIVE_PLOT:
+                    plot(agent.plotScores, agent.plotMeanScores)
+        else:
             plot(agent.plotScores, agent.plotMeanScores)
+            plt.savefig(CHECKPOINT_PATH+"/plot.png")
+            pygame.quit()
 
 if __name__ == '__main__':
     train()

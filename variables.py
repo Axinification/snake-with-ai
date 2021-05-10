@@ -5,7 +5,7 @@ EASY_MODE = False #Walls on
 
 #Time controll
 TIME_DELAY = 0 #50 #Change clock delay [ms]
-CLOCK_TICK = 120 #10 #Change amount of fps
+CLOCK_TICK = 120 #10 #Change amount of fps // Is starting 
 
 #Starting point
 START_ROW = 15 #Change starting row
@@ -33,10 +33,11 @@ COILING_PENALTY = -1
 
 LOOP_TIME = 100 # Per snake segment
 
-LOAD = False
+LOAD = False # Loading saved state
 
-AUTO_TRAIN = True
+TRAIN_LOOPS = 1600 # Amount of games to play
 
+LIVE_PLOT = False # Live plotting
 
 
 
