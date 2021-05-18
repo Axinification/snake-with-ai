@@ -7,7 +7,7 @@ import numpy as np
 from variables import (PENALTY_MULTIPLIER, SIZE, TILES, TIME_DELAY, CLOCK_TICK, 
                         START_ROW, START_COLUMN, REWARD, 
                         REWARD_MULTIPLIER, LOOP_TIME, TIME_PENALTY, 
-                        EASY_MODE, DIRECTION_REWARD, STRAIGHT_LINE_REWARD, COILING_PENALTY)
+                        EASY_MODE, DIRECTION_REWARD, STRAIGHT_LINE_REWARD, COILING_PENALTY, INPUT_VERSION)
 import matplotlib.pyplot as plt
 
 pygame.init()
@@ -35,6 +35,9 @@ class Direction(Enum):
 class Game:
     def __init__(self, width=SIZE, height=SIZE, tiles=TILES):
         #Set initial values
+
+        self.inputVersion = INPUT_VERSION
+
         self.width = width
         self.height = height
         self.tiles = tiles
@@ -78,7 +81,8 @@ class Game:
         self._moveSnake(action)
         # Check the reward for step
         self.reward = 0
-        self._directionReward()
+        if self.inputVersion != "fn" or self.inputVersion != "sn" or self.inputVersion != "fns" or self.inputVersion != "sns":
+            self._directionReward()
         self._turnReward(action)
         # Update snake array
         self.snake.insert(0, self.head) 

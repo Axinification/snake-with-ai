@@ -8,21 +8,25 @@ from collections import deque
 from environmentAI import Game, Direction, Point, BLOCK_SIZE
 from model import LinearQNet, QTrainer
 from plotter import plot
-from variables import (LIVE_PLOT, MAX_MEMORY, BATCH_SIZE, LEARNING_RATE,
-                        EPSILON_DELTA, GAMMA, GAMMA_LOW, GAMMA_INCREMENT,
-                        IS_INCREMENTING, LOAD, TRAIN_LOOPS)
+from variables import (LIVE_PLOT, MAX_MEMORY, BATCH_SIZE, LEARNING_RATE, EPSILON_DELTA, 
+                        GAMMA, GAMMA_LOW, GAMMA_INCREMENT, IS_INCREMENTING, LOAD, 
+                        TRAIN_LOOPS, INPUT_VERSION)
 
 #Define Version
 def returnInputVersion():
     print("""Define input version. 
     f -> Far seeing
     s -> Short seeing
-    fn -> Far no direction
-    sn -> Short no direction""")
+    fn -> Far seeing no direction
+    sn -> Short seeing no direction
+    fs -> Far seeing no snack
+    ss -> Short seeing no snack
+    fns -> Far seeing no direction no snack
+    sns -> Short seeing no direction no snack""")
 
     inputVersion = input("Type one of the options: ")
 
-    if(inputVersion == 'f' or inputVersion == 's' or inputVersion == 'fn' or inputVersion == 'sn'):
+    if(inputVersion == 'f' or inputVersion == 's' or inputVersion == 'fn' or inputVersion == 'sn' or inputVersion == 'fs' or inputVersion == 'ss' or inputVersion == 'fns' or inputVersion == 'sns'):
         return inputVersion
     else:
         print("Input invalid. Try again.")
@@ -49,6 +53,14 @@ def returnInputSize():
         return 15
     elif(INPUT_VERSION == 'sn'):
         return 11
+    elif(INPUT_VERSION == 'fs'):
+        return 18 # Amount of inputs in state
+    elif(INPUT_VERSION == 'fns'):
+        return 14
+    elif(INPUT_VERSION == 'ss'):
+        return 11
+    elif(INPUT_VERSION == 'sns'):
+        return 7
 
 INPUT_SIZE = returnInputSize()
 HIDDEN_SIZE = 256 # Amount of hidden nodes // can be changed
@@ -192,7 +204,7 @@ class Agent:
             (directionDown and game.onCollision(pointLeftUp))
         ]
 
-        if self.inputVersion == "f" or self.inputVersion == "fn":
+        if self.inputVersion == "f" or self.inputVersion == "fn" or self.inputVersion == "fs":
             #FAR VERSION
             far = [
                 #Danger far ahead
@@ -240,7 +252,7 @@ class Agent:
             self.state.extend(far)
 
         #Move direction
-        if self.inputVersion == "f" or self.inputVersion == "s":
+        if self.inputVersion == "f" or self.inputVersion == "s" or self.inputVersion == "fs" or self.inputVersion == "ss":
             direction = [
                 directionLeft,
                 directionRight,
@@ -250,13 +262,14 @@ class Agent:
             self.state.extend(direction)
 
         #Snack detection
-        snack = [
-            game.snack.x < game.head.x, #Snack to the left
-            game.snack.x > game.head.x, #Snack to the right
-            game.snack.y > game.head.y, #Snack down
-            game.snack.y < game.head.y  #Snack up
-        ]
-        self.state.extend(snack)
+        if self.inputVersion == "f" or self.inputVersion == "s" or self.inputVersion == "fn" or self.inputVersion == "sn":
+            snack = [
+                game.snack.x < game.head.x, #Snack to the left
+                game.snack.x > game.head.x, #Snack to the right
+                game.snack.y > game.head.y, #Snack down
+                game.snack.y < game.head.y  #Snack up
+            ]
+            self.state.extend(snack)
         return np.array(self.state, dtype=int)
 
     def remember(self, state, action, reward, nextState, gameOver): # Save inputs 

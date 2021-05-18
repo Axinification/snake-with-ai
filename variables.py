@@ -35,9 +35,14 @@ LOOP_TIME = 100 # Per snake segment
 
 LOAD = False # Loading saved state
 
-TRAIN_LOOPS = 1600 # Amount of games to play
+TRAIN_LOOPS = 200 # Amount of games to play
 
-LIVE_PLOT = False # Live plotting
+LIVE_PLOT = True # Live plotting
+
+
+
+#Unchangeable
+INPUT_VERSION = ''
 
 
 
