@@ -104,3 +104,7 @@ Changable values of the learning process:
     - GAMMA # Has to be less than 1. Lower discount rate strives for quick rewards and higher for the long term ones.
     - GAMMA_INCREMENT # Amount of gamma increment if dynamic change is enabled.
     For more changeable values see variables.py
+
+UML Class Diagram
+
+![UML class](https://user-images.githubusercontent.com/73855075/118899013-2072b080-b90e-11eb-8111-3d9100f62257.png)
