@@ -1,11 +1,5 @@
 # snake-with-ai
 
-Gra snake - 100%
-Wyliczanie potrzebnych danych - 100%
-Wizualizacja danych w grze - 100%
-Napisanie sieci neuronowej - 0%
-Machine Learning - 0%
-
 Installed dependencies:
 pip install pygame
 pip intall torch torchvision
@@ -13,7 +7,11 @@ pip install matplotlib ipython
 
 In this project Im going to use the DeepQ Learning which is an extension of Reinforced Learning
 
-The game is a reconstructed version used in previous project (old folder), reconstruction is done to optimize the game for AI and is based on https://github.com/python-engineer/python-fun/tree/master/snake-pygame
+The game is a reconstructed version used in previous project, 
+reconstruction is done to optimize the game for AI and is based on 
+https://github.com/python-engineer/python-fun/tree/master/snake-pygame
+
+Most of the learning process can be changed via variables.py file.
 
 Evironement for learning will be the game itself (PyGame)
     Environement will contain game logic in loop and give out appropriate points for actions
@@ -32,41 +30,42 @@ Agent combines information returned from Environement and Model to train the neu
     - With this information we calculate new state
     - We will remember this information and use it to train the model (model.train())
 
-Reward system used:
-    - eating snack: +10
-    - game over: -10
+Reward system used: those values change over time (see variables.py) 
+    - eating snack: +30
+    - game over: -20
     - else: 0
 
 Actions: 
-    (for Left Right version)
-    - [1,0,0] straight
-    - [0,1,0] right turn
-    - [0,0,1] left turn
-
     (for WASD version)
     - [1,0,0,0] direction left
     - [0,1,0,0] direction right
     - [0,0,1,0] direction up
     - [0,0,0,1] direction down
 
+Actions are based on clockwork rotation of axis and is calculated by using modulo of 4 to get the directions.
+    Modulo used for iteration -> (2+1)%4 = 3 -> (3+1)%4 = 0 
+For use case see environmentAI.py line 133
 
 
-State: (11 values)
-    - Danger: [straight, left, right] (3)
+State: (Amount of inputs is based on version selected)
+
+    Those 2 types of input are used by every version of the model as they comprise the core mechanics 
+    for reward system and are hard to change
     - Direction: [left, right, up, down] (4)
-    - Snack: [left, right, up, down] (4)
+    - Danger: [left-backward, left, left-forward, straight, 
+                    right-forward, right, right-backward] (7)
 
+    Versions that are using those inputs are: [f, fs]
+    - Danger far: [left-backward-far, left-far, left-forward-far, straight-far, 
+                    right-forward-far, right-far, right-backward-far] (7)
+    
+    Versions that are using those inputs are: [f, s]
+    - Snack: [left, right, up, down] (4) 
 
     MODEL:
-    (for Left Right version)
-    - Input Neurons -> 11
-    - Hidden Layer ->
-    - Output -> 3
-
-    (for WASD version)
-    - Input Neurons -> 11
-    - Hidden Layer ->
-    - Output -> 4
+    - Input Neurons -> 11 / 15 / 18 / 22 (Amount of inputs is based on chosen version)
+    - Hidden Layer -> 1 / 2 / 3 (Amount of hidden layers is set at the start)
+    - Output -> 4 (Output is always 4 as it tells the snake in which direction to go next)
 
 
 DeepQ Learning Basics:
@@ -99,3 +98,9 @@ Loss Function: Bellman Equation
 
     loss = (Qnew - Q)^2 - Mean square error
 
+Changable values of the learning process:
+    - LEARNING_RATE # The rate of bias change, the less the slower and more precise the learning
+    - EPSILON_DELTA # 0 randomness after x games
+    - GAMMA # Has to be less than 1. Lower discount rate strives for quick rewards and higher for the long term ones.
+    - GAMMA_INCREMENT # Amount of gamma increment if dynamic change is enabled.
+    For more changeable values see variables.py
