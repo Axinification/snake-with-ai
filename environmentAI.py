@@ -1,3 +1,4 @@
+from plotter import plot
 from numpy.core.numeric import array_equal
 import pygame
 import random

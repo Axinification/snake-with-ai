@@ -1,3 +1,5 @@
+from matplotlib import pyplot as plt
+import pygame
 import torch 
 import random
 import numpy as np
@@ -245,7 +247,7 @@ def train():
     agent = Agent()
     game = Game()
     
-    while True:
+    while agent.numberOfGames <= 1200:
         # Get old state
         oldState = agent.getState(game)
 
@@ -295,7 +297,10 @@ def train():
             # print('Scores:', plotScores, 'Mean Scores:', plotMeanScores) #Debugging
             # plot(plotScores, plotMeanScores) # Plotting of the scores
 
-            plot(agent.plotScores, agent.plotMeanScores)
+    else: 
+        plot(agent.plotScores, agent.plotMeanScores)
+        plt.savefig("test.png")
+        pygame.quit()
 
 if __name__ == '__main__':
     train()
