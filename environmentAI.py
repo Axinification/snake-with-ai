@@ -35,6 +35,7 @@ class Direction(Enum):
 class Game:
     def __init__(self, width=SIZE, height=SIZE, tiles=TILES):
         #Set initial values
+
         self.width = width
         self.height = height
         self.tiles = tiles
