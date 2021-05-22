@@ -295,7 +295,7 @@ def train():
             meanScore = agent.totalScore / agent.numberOfGames # Calculate mean score using total
             agent.plotMeanScores.append(meanScore) # Append the mean score plot with current mean score
             # print('Scores:', plotScores, 'Mean Scores:', plotMeanScores) #Debugging
-            # plot(plotScores, plotMeanScores) # Plotting of the scores
+            plot(agent.plotScores, agent.plotMeanScores) # Plotting of the scores
 
     else: 
         plot(agent.plotScores, agent.plotMeanScores)

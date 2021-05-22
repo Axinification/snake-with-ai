@@ -45,24 +45,24 @@ class LinearQNet(nn.Module):
         torch.save(self.state_dict(), fileName) # Saving the model
 
 # class LinearQNet(nn.Module):
-    def __init__(self, inputSize, hiddenSize, outputSize):
-        super().__init__()
+    # def __init__(self, inputSize, hiddenSize, outputSize):
+    #     super().__init__()
 
-        self.linear1 = nn.Linear(inputSize, hiddenSize)
-        self.linear2 = nn.Linear(hiddenSize, outputSize)
+    #     self.linear1 = nn.Linear(inputSize, hiddenSize)
+    #     self.linear2 = nn.Linear(hiddenSize, outputSize)
 
-    def forward(self, input):
-        input = F.relu(self.linear1(input))
-        input = self.linear2(input)
-        return input
+    # def forward(self, input):
+    #     input = F.relu(self.linear1(input))
+    #     input = self.linear2(input)
+    #     return input
     
-    # Saving the model
-    def saveModel(self, folder, fileName='model.pth'):
-        modelFolderPath = folder # Model will be saved in the 'model' folder
-        if not os.path.exists(modelFolderPath):
-            os.makedirs(modelFolderPath) # Creating the folder
-        fileName = os.path.join(modelFolderPath, fileName) # Setting filepath for the model
-        torch.save(self.state_dict(), fileName) # Saving the model
+    # # Saving the model
+    # def saveModel(self, folder, fileName='model.pth'):
+    #     modelFolderPath = folder # Model will be saved in the 'model' folder
+    #     if not os.path.exists(modelFolderPath):
+    #         os.makedirs(modelFolderPath) # Creating the folder
+    #     fileName = os.path.join(modelFolderPath, fileName) # Setting filepath for the model
+    #     torch.save(self.state_dict(), fileName) # Saving the model
 
 
 
