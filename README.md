@@ -26,7 +26,7 @@ Agent combines information returned from Environement and Model to train the neu
     - The next move is then predicted (model.predict())  
     - We will get next play step b prediction  
     - Based on this information we will get 3 values  
-        reward, game_over state and score  
+            reward, game_over state and score  
     - With this information we calculate new state  
     - We will remember this information and use it to train the model (model.train())  
 
